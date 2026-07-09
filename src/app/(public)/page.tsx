@@ -32,7 +32,7 @@ const HORAIRES = [
 const STATS = [
   { value: "140+", label: "licenciés", red: true },
   { value: "8", label: "équipes engagées" },
-  { value: "dès 5", label: "ans (école de hand)" },
+  { value: "dès 7", label: "ans (école de hand)" },
   { value: "1978", label: "année de création" },
 ];
 
@@ -87,7 +87,7 @@ export default function HomePage() {
               <div className="absolute inset-[26px] flex items-center justify-center rounded-full bg-gradient-to-br from-[#D81E34] to-[#8f0f20] shadow-[0_20px_50px_rgba(216,30,52,.45)]">
                 <div className="flex size-[150px] items-center justify-center overflow-hidden rounded-[20px] bg-white">
                   <Image
-                    src="/logo.svg"
+                    src="/logo.png"
                     alt="HBC Pays de Broons"
                     width={132}
                     height={132}
@@ -145,11 +145,11 @@ export default function HomePage() {
               École de hand
             </h3>
             <div className="mt-[5px] text-[12.5px] font-bold text-warning-icon">
-              2016 et après · dès 5 ans
+              2016 – 2019 · dès 7 ans
             </div>
             <p className="mt-3.5 text-sm leading-relaxed text-muted-foreground">
               Le hand par le jeu : motricité, coordination et premiers gestes
-              dans une ambiance douce et ludique.
+              dans une ambiance douce et ludique. À partir de 7 ans.
             </p>
           </div>
           <div className="rounded-[18px] border bg-card p-7 shadow-[0_1px_3px_rgba(0,0,0,.04)] transition-all hover:-translate-y-[3px] hover:shadow-[0_14px_30px_rgba(0,0,0,.08)]">
@@ -263,13 +263,13 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { file: "caisse-epargne.svg", name: "Caisse d'Épargne" },
-            { file: "groupama.svg", name: "Groupama" },
-            { file: "intermarche.svg", name: "Intermarché" },
-            { file: "france-barnums.svg", name: "FranceBarnums.com" },
-            { file: "lechevestrier.svg", name: "Lechevestrier" },
-            { file: "icexpertise.svg", name: "ICExpertise" },
-            { file: "terre-et-vins.svg", name: "Terre & Vins" },
+            { file: "caisse-epargne.png", name: "Caisse d'Épargne" },
+            { file: "groupama.png", name: "Groupama" },
+            { file: "intermarche.png", name: "Intermarché" },
+            { file: "france-barnums.png", name: "FranceBarnums.com" },
+            { file: "lechevestrier.png", name: "Lechevestrier" },
+            { file: "icexpertise.png", name: "ICExpertise" },
+            { file: "terre-et-vins.png", name: "Terre & Vins" },
           ].map((p) => (
             <div
               key={p.file}

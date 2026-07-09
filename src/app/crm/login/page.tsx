@@ -28,7 +28,7 @@ export default async function LoginPage({
       <div className="relative w-full max-w-sm rounded-[18px] bg-white p-[26px] shadow-[0_24px_60px_rgba(0,0,0,.28)]">
         <div className="text-center">
           <span className="mx-auto flex size-14 items-center justify-center overflow-hidden rounded-2xl border bg-white">
-            <Image src="/logo.svg" alt="HBC Pays de Broons" width={50} height={50} />
+            <Image src="/logo.png" alt="HBC Pays de Broons" width={50} height={50} />
           </span>
           <h1 className="mt-3 font-display text-[19px] font-extrabold">
             CRM Licences

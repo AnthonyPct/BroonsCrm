@@ -38,7 +38,7 @@ export default async function CrmLayout({
           className="flex items-center gap-3 border-b border-sidebar-border px-5 pb-[18px] pt-[22px]"
         >
           <span className="flex size-[46px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
-            <Image src="/logo.svg" alt="HBC Pays de Broons" width={42} height={42} />
+            <Image src="/logo.png" alt="HBC Pays de Broons" width={42} height={42} />
           </span>
           <span className="leading-tight">
             <span className="block font-display text-[15px] font-extrabold text-sidebar-accent-foreground">

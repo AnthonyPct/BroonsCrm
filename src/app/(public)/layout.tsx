@@ -14,7 +14,7 @@ export default function PublicLayout({
           <Link href="/" className="flex items-center gap-3">
             <span className="flex size-11 items-center justify-center overflow-hidden rounded-[11px] bg-white">
               <Image
-                src="/logo.svg"
+                src="/logo.png"
                 alt="HBC Pays de Broons"
                 width={40}
                 height={40}
@@ -70,7 +70,7 @@ export default function PublicLayout({
       <footer className="border-t border-white/5 bg-[#100d0a] text-[#8a837a]">
         <div className="mx-auto flex w-full max-w-[1160px] flex-wrap items-center gap-4 px-7 py-[34px]">
           <span className="flex size-9 items-center justify-center overflow-hidden rounded-[9px] bg-white">
-            <Image src="/logo.svg" alt="" width={32} height={32} />
+            <Image src="/logo.png" alt="" width={32} height={32} />
           </span>
           <span className="text-[13px] font-semibold text-[#c9c1b6]">
             Handball Club du Pays de Broons
