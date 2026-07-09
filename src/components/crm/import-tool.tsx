@@ -1,27 +1,12 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { FileSpreadsheet, Upload } from "lucide-react";
+import { Info, Upload } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { importLicensees, type ImportRow } from "@/app/actions/import";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 function normHeader(h: string): string {
   return h
@@ -29,6 +14,14 @@ function normHeader(h: string): string {
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z]/g, "");
+}
+
+function normName(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim();
 }
 
 const HEADER_MAP: Record<string, keyof ImportRow> = {
@@ -57,12 +50,10 @@ function toIsoDate(v: unknown): string | null {
     return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, "0")}-${String(v.getDate()).padStart(2, "0")}`;
   }
   const s = String(v).trim();
-  // dd/mm/yyyy
   const fr = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
   if (fr) {
     return `${fr[3]}-${fr[2].padStart(2, "0")}-${fr[1].padStart(2, "0")}`;
   }
-  // yyyy-mm-dd
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
   return null;
@@ -77,12 +68,23 @@ function normSex(v: unknown): string | null {
   return null;
 }
 
-export function ImportTool({ seasonId }: { seasonId: string }) {
+export function ImportTool({
+  seasonId,
+  existingMemberKeys,
+}: {
+  seasonId: string;
+  existingMemberKeys: string[];
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [source, setSource] = useState<"gesthand" | "excel">("gesthand");
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [fileName, setFileName] = useState<string>("");
   const [result, setResult] = useState<string>("");
   const [pending, startTransition] = useTransition();
+
+  const existing = new Set(existingMemberKeys);
+  const isRenewal = (r: ImportRow) =>
+    existing.has(`${normName(r.last_name)}|${normName(r.first_name)}`);
 
   async function parseFile(file: File) {
     const buffer = await file.arrayBuffer();
@@ -115,9 +117,7 @@ export function ImportTool({ seasonId }: { seasonId: string }) {
       ![...mapping.values()].includes("last_name") ||
       ![...mapping.values()].includes("first_name")
     ) {
-      toast.error(
-        "Colonnes « Nom » et « Prénom » introuvables dans le fichier."
-      );
+      toast.error("Colonnes « Nom » et « Prénom » introuvables dans le fichier.");
       return;
     }
 
@@ -147,69 +147,192 @@ export function ImportTool({ seasonId }: { seasonId: string }) {
     setResult("");
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="size-5" />
-          Import de licenciés
-        </CardTitle>
-        <CardDescription>
-          Extract Gesthand de la saison passée ou fichier Excel du club
-          (.xlsx, .csv). Colonnes reconnues : Nom, Prénom, Date de naissance,
-          Email, Sexe. La catégorie et le tarif sont pré-remplis
-          automatiquement.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".xlsx,.xls,.csv"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) parseFile(file);
-            e.target.value = "";
-          }}
-        />
-        <Button variant="outline" onClick={() => inputRef.current?.click()}>
-          <Upload className="size-4" />
-          Choisir un fichier
-        </Button>
+  const renewals = rows.filter(isRenewal).length;
 
-        {rows.length > 0 && (
-          <>
-            <div className="text-sm text-muted-foreground">
-              {`${fileName} — ${rows.length} licencié(s) détecté(s). Vérifiez l'aperçu puis lancez l'import (les doublons déjà présents seront ignorés).`}
+  return (
+    <div className="space-y-[18px]">
+      {/* choix de la source */}
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={() => setSource("gesthand")}
+          className={cn(
+            "flex flex-1 items-center gap-3.5 rounded-xl border-[1.5px] bg-card px-[18px] py-4 text-left transition-colors",
+            source === "gesthand"
+              ? "border-primary bg-accent"
+              : "border-input hover:border-[#c9c1b6]"
+          )}
+        >
+          <span className="flex size-[38px] flex-none items-center justify-center rounded-[10px] bg-info-bg font-display text-[13px] font-extrabold text-info">
+            GH
+          </span>
+          <span>
+            <span className="block text-[13.5px] font-bold">
+              Extract Gesthand
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              Renouvellements de l&apos;an passé
+            </span>
+          </span>
+        </button>
+        <button
+          onClick={() => setSource("excel")}
+          className={cn(
+            "flex flex-1 items-center gap-3.5 rounded-xl border-[1.5px] bg-card px-[18px] py-4 text-left transition-colors",
+            source === "excel"
+              ? "border-primary bg-accent"
+              : "border-input hover:border-[#c9c1b6]"
+          )}
+        >
+          <span className="flex size-[38px] flex-none items-center justify-center rounded-[10px] bg-success-bg font-display text-[13px] font-extrabold text-success">
+            XL
+          </span>
+          <span>
+            <span className="block text-[13.5px] font-bold">
+              Fichier Excel du club
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              Ancien tableur de suivi
+            </span>
+          </span>
+        </button>
+      </div>
+
+      {/* dropzone */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) parseFile(file);
+          e.target.value = "";
+        }}
+      />
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          const file = e.dataTransfer.files?.[0];
+          if (file) parseFile(file);
+        }}
+        className="cursor-pointer rounded-2xl border-2 border-dashed border-[#d8d1c6] bg-card px-6 py-12 text-center transition-colors hover:border-primary"
+      >
+        <span className="mx-auto flex size-[60px] items-center justify-center rounded-2xl bg-secondary">
+          <Upload className="size-7 text-primary" strokeWidth={2} />
+        </span>
+        <div className="mt-4 font-display text-[17px] font-bold">
+          {source === "gesthand"
+            ? "Déposez l'extract Gesthand (.csv / .xlsx)"
+            : "Déposez le fichier Excel du club (.xlsx)"}
+        </div>
+        <p className="mt-1.5 text-[13px] text-muted-foreground">
+          Colonnes attendues : nom, prénom, date de naissance. Glissez-déposez
+          le fichier ou cliquez pour parcourir.
+        </p>
+      </div>
+
+      <div className="flex items-start gap-3 rounded-[11px] bg-warning-bg px-3.5 py-3">
+        <Info className="mt-0.5 size-4 shrink-0 text-warning" />
+        <p className="text-[12.5px] leading-relaxed text-[#8a5a10]">
+          Les paiements ne sont pas importés ici : ils remonteront
+          automatiquement de HelloAsso. L&apos;import crée les fiches au statut
+          « À saisir ».
+        </p>
+      </div>
+
+      {/* preview */}
+      {rows.length > 0 && (
+        <>
+          <div className="grid gap-3.5 sm:grid-cols-3">
+            <div className="rounded-[14px] border bg-card px-5 py-4">
+              <div className="text-[11.5px] font-bold uppercase tracking-[.05em] text-[#9C958D]">
+                Lignes détectées
+              </div>
+              <div className="mt-1 font-display text-[26px] font-extrabold">
+                {rows.length}
+              </div>
             </div>
-            <div className="max-h-80 overflow-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Prénom</TableHead>
-                    <TableHead>Naissance</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Sexe</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.slice(0, 100).map((r, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{r.last_name}</TableCell>
-                      <TableCell>{r.first_name}</TableCell>
-                      <TableCell>{formatDate(r.birth_date)}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {r.email ?? "—"}
-                      </TableCell>
-                      <TableCell>{r.sex ?? "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="rounded-[14px] border bg-card px-5 py-4">
+              <div className="text-[11.5px] font-bold uppercase tracking-[.05em] text-[#9C958D]">
+                Renouvellements
+              </div>
+              <div className="mt-1 font-display text-[26px] font-extrabold text-info">
+                {renewals}
+              </div>
             </div>
-            <Button
+            <div className="rounded-[14px] border bg-card px-5 py-4">
+              <div className="text-[11.5px] font-bold uppercase tracking-[.05em] text-[#9C958D]">
+                Nouveaux
+              </div>
+              <div className="mt-1 font-display text-[26px] font-extrabold text-success">
+                {rows.length - renewals}
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-[14px] border bg-card">
+            <div className="border-b bg-secondary px-5 py-3 text-[12.5px] font-semibold text-muted-foreground">
+              {`${fileName} — ${rows.length} licencié(s) détecté(s). Vérifiez l'aperçu puis lancez l'import (les doublons déjà importés seront ignorés).`}
+            </div>
+            <div className="grid grid-cols-[1.8fr_1fr_1fr_.6fr_1.1fr] border-b bg-secondary px-5 py-2.5">
+              {["Licencié", "Naissance", "Email", "Sexe", "Détection"].map(
+                (h) => (
+                  <div
+                    key={h}
+                    className="text-[11px] font-bold uppercase tracking-[.05em] text-[#9C958D]"
+                  >
+                    {h}
+                  </div>
+                )
+              )}
+            </div>
+            <div className="max-h-80 overflow-auto">
+              {rows.slice(0, 200).map((r, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[1.8fr_1fr_1fr_.6fr_1.1fr] items-center border-b border-muted px-5 py-2.5 text-[13px] last:border-b-0"
+                >
+                  <div className="font-bold">
+                    {r.first_name} {r.last_name.toUpperCase()}
+                  </div>
+                  <div>{formatDate(r.birth_date)}</div>
+                  <div className="truncate text-muted-foreground">
+                    {r.email ?? "—"}
+                  </div>
+                  <div>{r.sex ?? "—"}</div>
+                  <div>
+                    <span
+                      className={cn(
+                        "inline-block rounded-full px-[11px] py-[3px] text-[11.5px] font-bold",
+                        isRenewal(r)
+                          ? "bg-info-bg text-info"
+                          : "bg-success-bg text-success"
+                      )}
+                    >
+                      {isRenewal(r) ? "Renouvellement" : "Nouveau"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => {
+                setRows([]);
+                setFileName("");
+              }}
+              className="h-11 rounded-[10px] border bg-card px-[18px] text-[13.5px] font-bold transition-colors hover:border-[#9C958D]"
+            >
+              Annuler
+            </button>
+            <button
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
@@ -218,23 +341,31 @@ export function ImportTool({ seasonId }: { seasonId: string }) {
                     res.errors.length ? `, ${res.errors.length} erreur(s)` : ""
                   }`;
                   setResult(
-                    res.errors.length ? `${msg} — ${res.errors.join(" · ")}` : msg
+                    res.errors.length
+                      ? `${msg} — ${res.errors.join(" · ")}`
+                      : msg
                   );
                   setRows([]);
                   if (res.errors.length) toast.warning(msg);
-                  else toast.success(`Import terminé : ${msg}`);
+                  else
+                    toast.success(
+                      `${res.created} licenciés importés · statut « À saisir »`
+                    );
                 })
               }
+              className="h-11 rounded-[10px] bg-primary px-6 text-[13.5px] font-bold text-white shadow-[0_2px_8px_rgba(216,30,52,.28)] transition-colors hover:bg-[#B0122A] disabled:opacity-60"
             >
-              Importer {rows.length} licencié(s)
-            </Button>
-          </>
-        )}
+              ✓ Importer {rows.length} licencié(s)
+            </button>
+          </div>
+        </>
+      )}
 
-        {result && (
-          <p className="rounded-md bg-muted p-3 text-sm">{result}</p>
-        )}
-      </CardContent>
-    </Card>
+      {result && (
+        <p className="rounded-[10px] bg-secondary px-3.5 py-3 text-sm">
+          {result}
+        </p>
+      )}
+    </div>
   );
 }

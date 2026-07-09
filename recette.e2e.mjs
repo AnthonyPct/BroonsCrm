@@ -2,7 +2,9 @@ import { chromium } from "playwright";
 import fs from "node:fs";
 
 const BASE = "http://localhost:3100";
-const SHOTS = "/private/tmp/claude-501/-Users-anthonypicquet-Documents-Hand-crm/29771a82-2461-4485-93c2-d07eea4f426e/scratchpad/shots";
+const SHOTS =
+  process.env.SHOTS_DIR ??
+  "/private/tmp/claude-501/-Users-anthonypicquet-Documents-Hand-crm/29771a82-2461-4485-93c2-d07eea4f426e/scratchpad/shots";
 fs.mkdirSync(SHOTS, { recursive: true });
 
 const results = [];
@@ -20,19 +22,22 @@ try {
   await page.goto(BASE + "/");
   check("Accueil public charge", (await page.title()).includes("HBC"));
   check(
-    "Hero présent",
-    await page.getByText("Le handball pour tous").isVisible()
+    "Hero maquette présent",
+    await page.getByText("on le vit ensemble.").isVisible()
   );
+  check("Stat strip 140+ licenciés", await page.getByText("140+").isVisible());
   await page.screenshot({ path: SHOTS + "/01-accueil.png", fullPage: true });
 
   await page.goto(BASE + "/licence");
   check(
-    "Tutoriel licence : 4 étapes",
-    await page.getByText("1. Recevez votre lien Gesthand").isVisible()
+    "Tutoriel : étape 1 Gesthand",
+    await page.getByText("Faire sa demande sur Gesthand").isVisible()
   );
   check(
-    "Tutoriel : réduction 10 août",
-    await page.getByText("−5 % avant le 10 août !").isVisible()
+    "Bandeau réduction −5 %",
+    await page
+      .getByText("Réduction anticipée : −5 % sur la part Ligue")
+      .isVisible()
   );
   await page.screenshot({ path: SHOTS + "/02-licence.png", fullPage: true });
 
@@ -40,6 +45,7 @@ try {
   await page.goto(BASE + "/crm/dashboard");
   await page.waitForURL("**/crm/login");
   check("Redirection login si non connecté", page.url().includes("/crm/login"));
+  await page.screenshot({ path: SHOTS + "/10-login.png" });
 
   await page.fill("#email", "admin@hbcpaysdebroons.fr");
   await page.fill("#password", "mauvais-mdp");
@@ -57,50 +63,66 @@ try {
   check("Connexion admin OK", true);
 
   // ---------- DASHBOARD ----------
-  await page.waitForSelector("text=Dû à la ligue / fédé");
+  await page.waitForSelector("text=Progression des paiements");
   const dashboardText = await page.textContent("body");
-  check("KPI dû ligue affiché", dashboardText.includes("Dû à la ligue"));
-  // encaissé attendu : 100+70+20 (manuel) + 67 (Hugo HA) + 175 (Timéo HA) = 432
+  check("KPI dû ligue affiché", dashboardText.includes("Dû à la ligue / fédé"));
   check(
     "KPI encaissé = 432 €",
     dashboardText.includes("432,00"),
     "attendu 432,00 €"
   );
-  check("5 licences comptées", !!dashboardText.match(/Licences/));
+  check(
+    "File d'arbitrage cliquable",
+    await page.getByText("Traiter la file").isVisible()
+  );
+  check(
+    "Répartition par catégorie",
+    dashboardText.includes("Répartition par catégorie")
+  );
+  await page.waitForTimeout(600);
   await page.screenshot({ path: SHOTS + "/03-dashboard.png", fullPage: true });
 
-  // ---------- LICENCIÉS : LISTE + FILTRES + KANBAN ----------
+  // ---------- LICENCIÉS : TABLEAU + FILTRES + KANBAN + CARTES ----------
   await page.goto(BASE + "/crm/licencies");
   await page.waitForSelector("text=DUPONT");
-  const rows = await page.locator("tbody tr").count();
-  check("Liste : 5 licenciés", rows === 5, `${rows} lignes`);
+  check(
+    "Tableau : 5 licenciés",
+    await page.getByText("5 licencié(s) affiché(s)").isVisible()
+  );
 
   await page.fill('input[placeholder*="Rechercher"]', "dupont");
-  const rowsFiltered = await page.locator("tbody tr").count();
-  check("Recherche 'dupont' → 1 ligne", rowsFiltered === 1, `${rowsFiltered}`);
-  await page.fill('input[placeholder*="Rechercher"]', "");
-
-  await page.click('button[role="tab"]:has-text("Kanban")');
-  await page.waitForSelector("text=Aucune licence");
-  const kanbanText = await page
-    .locator('[role="tabpanel"][data-state="active"]')
-    .textContent();
   check(
-    "Vue Kanban : 4 colonnes de statut",
-    kanbanText.includes("À saisir") &&
-      kanbanText.includes("En attente de paiement") &&
-      kanbanText.includes("Qualifiée")
+    "Recherche 'dupont' → 1",
+    await page.getByText("1 licencié(s) affiché(s)").isVisible()
   );
-  await page.screenshot({ path: SHOTS + "/04-kanban.png", fullPage: true });
+  await page.fill('input[placeholder*="Rechercher"]', "");
+  await page.screenshot({ path: SHOTS + "/04-liste.png", fullPage: true });
+
+  await page.click('button:has-text("Kanban")');
+  await page.waitForSelector("text=Aucune licence");
+  const kanbanText = await page.textContent("body");
+  check(
+    "Vue Kanban : 4 colonnes",
+    kanbanText.includes("À saisir") && kanbanText.includes("En attente")
+  );
+  await page.screenshot({ path: SHOTS + "/04b-kanban.png", fullPage: true });
+
+  await page.click('button:has-text("Cartes")');
+  await page.waitForSelector("text=Reste");
+  check("Vue Cartes visible", true);
+  await page.screenshot({ path: SHOTS + "/04c-cartes.png", fullPage: true });
 
   // ---------- FICHE LÉA (réduction + tolérance) ----------
-  await page.click('button[role="tab"]:has-text("Liste")');
-  await page.click("text=DUPONT Léa");
-  await page.waitForSelector("text=Reste à charge");
+  await page.click('button:has-text("Tableau")');
+  await page.click("text=Léa DUPONT");
+  await page.waitForSelector("text=Détail du tarif");
   const ficheText = await page.textContent("body");
   check("Fiche Léa : total dû 173,45 €", ficheText.includes("173,45"));
-  check("Fiche Léa : payée (tolérance 10 €)", ficheText.includes("Payée"));
-  check("Fiche Léa : réduction −5 % affichée", ficheText.includes("−5"));
+  check("Fiche Léa : Réglée (tolérance 10 €)", ficheText.includes("Réglée"));
+  check(
+    "Fiche Léa : badge −5 % ligue",
+    ficheText.includes("−5 % ligue · avant 10/08")
+  );
   await page.screenshot({ path: SHOTS + "/05-fiche.png", fullPage: true });
 
   // ---------- NOUVEAU LICENCIÉ (catégorie auto) ----------
@@ -109,10 +131,7 @@ try {
   await page.fill("#first_name", "Zoé");
   await page.fill("#birth_date", "2014-05-10");
   const previewText = await page.textContent("body");
-  check(
-    "Catégorie auto 12-16 ans proposée",
-    previewText.includes("12-16 ans")
-  );
+  check("Catégorie auto 12-16 ans proposée", previewText.includes("12-16 ans"));
   check(
     "Aperçu tarif avec réduction",
     previewText.includes("−5 % avant le 10/08")
@@ -124,30 +143,26 @@ try {
     { timeout: 20000 }
   );
   check("Création → redirection fiche", true);
-  await page.waitForSelector("text=Reste à charge");
+  await page.waitForSelector("text=Détail du tarif");
 
   // ---------- AJOUT PAIEMENT ESPÈCES ----------
-  await page.click('button:has-text("Ajouter un paiement")');
-  await page.waitForSelector("text=Nouveau paiement");
-  await page.click('[id="source"]');
-  await page.click('[role="option"]:has-text("Espèces")');
-  await page.fill("#amount", "50");
-  await page.click('button:has-text("Enregistrer")');
-  await page.waitForSelector('tbody tr:has-text("Espèces")', {
-    timeout: 20000,
-  });
-  const afterPay = await page
-    .locator('tbody tr:has-text("Espèces")')
-    .textContent();
+  await page.click('button:has-text("Saisir un paiement")');
+  await page.waitForSelector("text=Moyen de paiement");
+  await page.click('button:has-text("Espèces")');
+  await page.fill('input[name="amount"]', "50");
+  await page.click('button[type="submit"]:has-text("Enregistrer")');
+  await page.waitForSelector("text=Espèces", { timeout: 20000 });
+  await page.waitForTimeout(800);
+  const afterPay = await page.textContent("body");
   check("Paiement espèces 50 € enregistré", afterPay.includes("50,00"));
 
   // ---------- QUALIFICATION ----------
-  await page.click("#qualification");
-  await page.waitForSelector("text=Licence marquée qualifiée");
+  await page.click('button:has-text("Marquer comme qualifiée")');
+  await page.waitForSelector("text=Qualification enregistrée");
   check("Bascule qualification OK", true);
   await page.reload();
-  const afterQualif = await page.textContent("body");
-  check("Statut Qualifiée persisté", afterQualif.includes("Qualifiée"));
+  await page.waitForSelector("text=Licence qualifiée");
+  check("Statut Qualifiée persisté", true);
 
   // ---------- RÉCONCILIATION / ARBITRAGE ----------
   await page.goto(BASE + "/crm/reconciliation");
@@ -156,60 +171,74 @@ try {
     "Commande Sophie Grandet en arbitrage",
     await page.getByText("Sophie Grandet").isVisible()
   );
-  await page.screenshot({ path: SHOTS + "/07-reconciliation.png", fullPage: true });
+  await page.screenshot({
+    path: SHOTS + "/07-reconciliation.png",
+    fullPage: true,
+  });
 
-  await page.click("text=Choisir le licencié concerné");
-  await page.click('[role="option"]:has-text("TESTEUR Zoé")');
-  await page.click('button:has-text("Assigner")');
+  await page.click("text=Chercher le licencié concerné");
+  await page.click('[role="option"]:has-text("Zoé TESTEUR")');
+  await page.click('button:has-text("Rapprocher")');
   await page.waitForSelector("text=Commande rapprochée");
   check("Arbitrage manuel : commande assignée", true);
   await page.waitForTimeout(1200);
   await page.reload();
-  const reconText = await page.textContent("body");
-  check(
-    "Plus d'arbitrage en attente",
-    reconText.includes("Aucune commande en attente")
-  );
+  await page.waitForSelector("text=File vide, tout est rapproché");
+  check("File vide après arbitrage", true);
 
   // ---------- GRILLE TARIFAIRE ----------
   await page.goto(BASE + "/crm/parametres/tarifs");
   await page.waitForSelector("text=Part Fédé");
-  const gridInputs = await page.locator("tbody input").count();
+  const gridText = await page.textContent("body");
+  check("Grille : colonne Dû ligue/fédé", gridText.includes("Dû ligue/fédé"));
+  check(
+    "Grille : réduction anticipée",
+    gridText.includes("Réduction anticipée")
+  );
+  const gridInputs = await page.locator("input").count();
   check("Grille éditable chargée", gridInputs >= 20, `${gridInputs} champs`);
   await page.screenshot({ path: SHOTS + "/08-tarifs.png", fullPage: true });
 
   // ---------- INTÉGRATIONS ----------
   await page.goto(BASE + "/crm/parametres/integrations");
-  await page.waitForSelector("text=Configuration du webhook");
+  await page.waitForSelector("text=Webhook temps réel");
   check(
-    "Page intégrations : URL webhook affichée",
+    "Intégrations : URL webhook affichée",
     (await page.textContent("body")).includes("helloasso-webhook")
   );
+  await page.screenshot({
+    path: SHOTS + "/09-integrations.png",
+    fullPage: true,
+  });
 
   // ---------- IMPORT DÉBUT DE SAISON ----------
-  const csv = "Nom;Prénom;Date de naissance;Sexe\nImporté;Marc;12/04/2009;M\nImporté;Julie;03/09/2016;F\n";
+  const csv =
+    "Nom;Prénom;Date de naissance;Sexe\nImporté;Marc;12/04/2009;M\nImporté;Julie;03/09/2016;F\n";
   const csvPath = SHOTS + "/../import-test.csv";
-  fs.writeFileSync(csvPath, "﻿" + csv, "utf8");
+  fs.writeFileSync(csvPath, csv, "utf8");
   await page.goto(BASE + "/crm/saison");
   await page.setInputFiles('input[type="file"]', csvPath);
-  await page.waitForSelector("text=2 licencié(s) détecté(s)");
-  check("Import : parsing CSV Gesthand OK", true);
+  await page.waitForSelector("text=Lignes détectées");
+  const importText = await page.textContent("body");
+  check(
+    "Import : parsing CSV OK",
+    importText.includes("2 licencié(s) détecté(s)")
+  );
+  check("Import : badge Nouveau", importText.includes("Nouveau"));
+  await page.screenshot({ path: SHOTS + "/11-import.png", fullPage: true });
   await page.click('button:has-text("Importer 2 licencié(s)")');
-  await page.waitForSelector("text=Import terminé", { timeout: 20000 });
+  await page.waitForSelector("text=licenciés importés", { timeout: 20000 });
   check("Import : 2 licenciés créés", true);
-  await page.screenshot({ path: SHOTS + "/09-import.png", fullPage: true });
 
   await page.goto(BASE + "/crm/licencies");
   await page.waitForSelector("text=IMPORTÉ");
-  const rowsAfterImport = await page.locator("tbody tr").count();
   check(
     "Liste après import : 8 licenciés",
-    rowsAfterImport === 8,
-    `${rowsAfterImport} lignes`
+    await page.getByText("8 licencié(s) affiché(s)").isVisible()
   );
 
   // ---------- DÉCONNEXION ----------
-  await page.click('button:has-text("Se déconnecter")');
+  await page.click('[title="Se déconnecter"]');
   await page.waitForURL("**/crm/login");
   check("Déconnexion OK", true);
 } catch (e) {
@@ -219,5 +248,7 @@ try {
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);
-console.log(`\n=== RECETTE : ${results.length - failed.length}/${results.length} OK ===`);
+console.log(
+  `\n=== RECETTE : ${results.length - failed.length}/${results.length} OK ===`
+);
 process.exit(failed.length ? 1 : 0);

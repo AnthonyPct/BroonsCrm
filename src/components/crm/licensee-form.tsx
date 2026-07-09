@@ -245,26 +245,32 @@ export function LicenseeForm({
       </Card>
 
       {due && effectiveTariff && (
-        <Card className="border-[oklch(0.78_0.14_75)] bg-[oklch(0.78_0.14_75)]/10">
-          <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6">
-            <div className="text-sm">
-              <div className="font-semibold">{effectiveTariff.category}</div>
-              <div className="text-muted-foreground">
-                Fédé {eur.format(Number(effectiveTariff.part_ffhb))} + Ligue{" "}
-                {eur.format(due.partLbhbEffective)}
-                {due.discounted && (
-                  <span className="ml-1 font-medium text-emerald-700">
-                    (−5 % avant le 10/08 ✓)
-                  </span>
-                )}{" "}
-                + Club {eur.format(Number(effectiveTariff.part_hbc))}
-              </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[11px] border bg-secondary px-4 py-[13px]">
+          <div className="text-sm">
+            <div className="text-[11px] font-semibold text-[#9C958D]">
+              Catégorie auto
             </div>
-            <div className="text-2xl font-bold tabular-nums">
+            <div className="font-bold">{effectiveTariff.category}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              Fédé {eur.format(Number(effectiveTariff.part_ffhb))} + Ligue{" "}
+              {eur.format(due.partLbhbEffective)}
+              {due.discounted && (
+                <span className="ml-1 font-semibold text-success">
+                  (−5 % avant le 10/08 ✓)
+                </span>
+              )}{" "}
+              + Club {eur.format(Number(effectiveTariff.part_hbc))}
+            </div>
+          </div>
+          <div>
+            <div className="text-right text-[11px] font-semibold text-[#9C958D]">
+              Tarif calculé
+            </div>
+            <div className="font-display text-lg font-extrabold tabular-nums">
               {eur.format(due.total)}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       <div className="flex justify-end gap-2">

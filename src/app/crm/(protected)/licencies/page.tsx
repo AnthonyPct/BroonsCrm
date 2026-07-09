@@ -21,18 +21,9 @@ export default async function LicenseesPage() {
   ]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Licenciés</h1>
-        <p className="text-muted-foreground">
-          Saison {season.label} — {licensees.length} licence
-          {licensees.length > 1 ? "s" : ""}
-        </p>
-      </div>
-      <LicenseesView
-        licensees={licensees}
-        categories={tariffs.map((t) => t.category)}
-      />
-    </div>
+    <LicenseesView
+      licensees={licensees}
+      categories={tariffs.map((t) => t.category)}
+    />
   );
 }

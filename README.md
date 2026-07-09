@@ -2,6 +2,10 @@
 
 Site web du club + CRM interne de gestion des licences. Remplace l'Excel + AppScript historique : les tarifs (3 parts Fédé/Ligue/Club), la réduction −5 % avant le 10/08, la réconciliation HelloAsso et le reste à charge sont calculés automatiquement. L'admin ne saisit que les exceptions (chèque, espèces, Pass'Sport, ANCV, CAF, licence offerte).
 
+## Design
+
+UI alignée sur les maquettes Claude Design (`CRM Licences HBC.dc.html` / `Site public HBC.dc.html`) : palette crème `#F5F3EF` / rouge club `#D81E34` / noir chaud `#17130F`, typographies **Archivo** (titres, montants) + **Manrope** (texte), tokens dans [src/app/globals.css](src/app/globals.css). Le logo du club est un placeholder SVG — remplacer [public/logo.svg](public/logo.svg) par le vrai logo (même nom de fichier) pour le voir partout.
+
 ## Stack
 
 - **Next.js 16** (App Router, TypeScript) + Tailwind CSS v4 + shadcn/ui + Recharts
@@ -83,7 +87,7 @@ delete from helloasso_orders where ha_order_id like '8000%';
 ## Tests
 
 - `pnpm build` + `pnpm lint`
-- Recette E2E : `pnpm start -p 3100 &` puis `node recette.e2e.mjs` (31 vérifications : auth, KPIs, filtres, kanban, tarif auto, réduction, tolérance, paiements, qualification, arbitrage, imports…)
+- Recette E2E : `pnpm start -p 3100 &` puis `node recette.e2e.mjs` (37 vérifications : auth, KPIs, vues Tableau/Kanban/Cartes, tarif auto, réduction, tolérance, paiements, qualification, arbitrage, imports…)
 
 ## Déploiement
 

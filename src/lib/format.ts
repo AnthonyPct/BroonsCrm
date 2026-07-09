@@ -12,13 +12,13 @@ export function formatDate(date: string | Date | null | undefined): string {
 
 export const LICENSE_STATUS_LABELS: Record<string, string> = {
   a_saisir: "À saisir",
-  attente_paiement: "En attente de paiement",
+  attente_paiement: "En attente",
   payee: "Payée",
   qualifiee: "Qualifiée",
 };
 
 export const PAYMENT_STATUS_LABELS: Record<string, string> = {
-  payee: "Payée",
+  payee: "Réglée",
   partielle: "Partielle",
   impayee: "Impayée",
   inconnu: "Tarif manquant",
@@ -30,7 +30,7 @@ export const PAYMENT_SOURCE_LABELS: Record<string, string> = {
   cheque: "Chèque",
   espece: "Espèces",
   ancv: "ANCV",
-  caf: "CAF Chèque Loisirs",
+  caf: "CAF Ch. Loisirs",
   offert: "Offert (bureau)",
 };
 

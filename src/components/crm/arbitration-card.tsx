@@ -1,16 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, EyeOff } from "lucide-react";
+import { Check } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -24,7 +16,7 @@ import type { Tables } from "@/lib/database.types";
 
 type Order = Tables<"helloasso_orders">;
 
-export function ArbitrationCard({
+export function ArbitrationRow({
   order,
   licensees,
 }: {
@@ -40,45 +32,53 @@ export function ArbitrationCard({
         user?: { firstName?: string; lastName?: string };
       }[])
     : [];
+  const itemUsers = items
+    .filter((it) => it.user?.firstName)
+    .map((it) => `${it.user!.firstName} ${it.user!.lastName ?? ""}`.trim());
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
-          <span>
-            {order.payer_first_name} {order.payer_last_name}
-            <span className="ml-2 font-normal text-muted-foreground">
-              (payeur)
-            </span>
-          </span>
-          <span className="tabular-nums">
+    <div className="grid gap-4 border-b border-muted px-6 py-4 last:border-b-0 lg:grid-cols-[1.5fr_1.4fr_auto] lg:gap-[18px]">
+      {/* commande */}
+      <div>
+        <div className="text-[11px] font-bold uppercase tracking-[.05em] text-[#9C958D]">
+          Commande HelloAsso
+        </div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className="font-display text-lg font-extrabold tabular-nums">
             {eur.format(Number(order.amount_total))}
           </span>
-        </CardTitle>
-        <CardDescription>
-          Commande {order.ha_order_id} du {formatDate(order.order_date)}
-          {order.payer_email && ` — ${order.payer_email}`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {items.length > 0 && (
-          <div className="rounded-md bg-muted/60 p-3 text-sm">
-            <div className="mb-1 font-medium">Contenu de la commande :</div>
-            <ul className="list-inside list-disc text-muted-foreground">
-              {items.map((it, i) => (
-                <li key={i}>
-                  {it.name ?? "Licence"}
-                  {it.user?.firstName &&
-                    ` — pour ${it.user.firstName} ${it.user.lastName ?? ""}`}
-                </li>
-              ))}
-            </ul>
+          <span className="text-xs text-muted-foreground">
+            {formatDate(order.order_date)}
+          </span>
+        </div>
+        <div className="mt-1 text-[12.5px]">
+          Payeur :{" "}
+          <strong>
+            {order.payer_first_name} {order.payer_last_name}
+          </strong>
+          {order.payer_email && (
+            <span className="text-muted-foreground"> · {order.payer_email}</span>
+          )}
+        </div>
+        {itemUsers.length > 0 && (
+          <div className="mt-0.5 text-[12.5px] text-muted-foreground">
+            Licence pour : <strong>{itemUsers.join(", ")}</strong>
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="mt-1 text-[11px] text-[#b5aea3]">
+          Réf. {order.ha_order_id}
+        </div>
+      </div>
+
+      {/* rapprochement */}
+      <div>
+        <div className="text-[11px] font-bold uppercase tracking-[.05em] text-[#9C958D]">
+          Rapprochement
+        </div>
+        <div className="mt-2">
           <Select value={licenseId} onValueChange={setLicenseId}>
-            <SelectTrigger className="min-w-64 flex-1">
-              <SelectValue placeholder="Choisir le licencié concerné…" />
+            <SelectTrigger className="h-10 w-full rounded-[10px] border-input bg-secondary text-[13px] font-semibold">
+              <SelectValue placeholder="Chercher le licencié concerné…" />
             </SelectTrigger>
             <SelectContent>
               {licensees.map((l) => (
@@ -88,39 +88,46 @@ export function ArbitrationCard({
               ))}
             </SelectContent>
           </Select>
-          <Button
-            disabled={!licenseId || pending}
-            onClick={() =>
-              startTransition(async () => {
-                try {
-                  await assignOrder(order.id, licenseId);
-                  toast.success("Commande rapprochée, paiements créés");
-                } catch (e) {
-                  toast.error(
-                    e instanceof Error ? e.message : "Erreur de rapprochement"
-                  );
-                }
-              })
-            }
-          >
-            <Check className="size-4" />
-            Assigner
-          </Button>
-          <Button
-            variant="outline"
-            disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                await ignoreOrder(order.id);
-                toast.success("Commande ignorée");
-              })
-            }
-          >
-            <EyeOff className="size-4" />
-            Ignorer
-          </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* actions */}
+      <div className="flex min-w-[150px] flex-row gap-2 lg:flex-col">
+        <button
+          disabled={!licenseId || pending}
+          onClick={() =>
+            startTransition(async () => {
+              try {
+                const chosen = licensees.find((l) => l.id === licenseId);
+                await assignOrder(order.id, licenseId);
+                toast.success(
+                  `Commande rapprochée${chosen ? ` à ${chosen.label.split(" — ")[0]}` : ""}`
+                );
+              } catch (e) {
+                toast.error(
+                  e instanceof Error ? e.message : "Erreur de rapprochement"
+                );
+              }
+            })
+          }
+          className="flex items-center justify-center gap-1.5 rounded-[9px] bg-success px-3.5 py-[9px] text-[12.5px] font-bold text-white transition-colors hover:bg-success-strong disabled:opacity-50"
+        >
+          <Check className="size-3.5" strokeWidth={3} />
+          Rapprocher
+        </button>
+        <button
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              await ignoreOrder(order.id);
+              toast.success("Commande ignorée");
+            })
+          }
+          className="rounded-[9px] border bg-card px-3.5 py-[9px] text-xs font-semibold text-muted-foreground transition-colors hover:border-[#9C958D] disabled:opacity-50"
+        >
+          Ignorer
+        </button>
+      </div>
+    </div>
   );
 }

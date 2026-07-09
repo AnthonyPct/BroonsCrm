@@ -1,63 +1,45 @@
 import type { Metadata } from "next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ImportTool } from "@/components/crm/import-tool";
 import { getCurrentSeason } from "@/lib/queries";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Début de saison",
 };
 
+function norm(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim();
+}
+
 export default async function SeasonPage() {
   const season = await getCurrentSeason();
   if (!season) return <p>Aucune saison active.</p>;
 
+  const supabase = await createClient();
+  const { data: members } = await supabase
+    .from("members")
+    .select("first_name, last_name");
+  const memberKeys = (members ?? []).map(
+    (m) => `${norm(m.last_name)}|${norm(m.first_name)}`
+  );
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-[960px] space-y-[18px]">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Début de saison — {season.label}
-        </h1>
-        <p className="text-muted-foreground">
-          Importez l&apos;extract Gesthand de la saison passée pour
-          pré-remplir les renouvellements : catégorie et tarif sont calculés
-          automatiquement depuis l&apos;année de naissance.
+        <h2 className="font-display text-[22px] font-extrabold tracking-[-.01em]">
+          Ouvrir la saison {season.label}
+        </h2>
+        <p className="mt-1.5 max-w-[680px] text-[13.5px] leading-relaxed text-muted-foreground">
+          Importez la liste des licenciés en une fois. La catégorie et le tarif
+          sont déduits automatiquement de l&apos;année de naissance via la
+          grille en vigueur.
         </p>
       </div>
-
-      <ImportTool seasonId={season.id} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Comment ça marche ?</CardTitle>
-          <CardDescription>Le déroulé conseillé en 4 étapes.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-            <li>
-              Exportez la liste des licenciés de la saison passée depuis
-              Gesthand (nom, prénom, date de naissance).
-            </li>
-            <li>
-              Importez le fichier ci-dessus : chaque licencié est créé avec le
-              statut « À saisir » et son tarif pré-calculé.
-            </li>
-            <li>
-              Au fil des paiements HelloAsso, les licences passent
-              automatiquement en « Payée » (réconciliation).
-            </li>
-            <li>
-              Cochez « Qualifiée » sur la fiche du licencié quand la ligue
-              valide la licence dans Gesthand.
-            </li>
-          </ol>
-        </CardContent>
-      </Card>
+      <ImportTool seasonId={season.id} existingMemberKeys={memberKeys} />
     </div>
   );
 }

@@ -1,51 +1,54 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+  CheckCircle2,
+  ChevronLeft,
+  Clock,
+  Pencil,
+} from "lucide-react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LicenseStatusBadge, PaymentStatusBadge } from "@/components/crm/badges";
+  BoardBadge,
+  MutationBadge,
+  PaymentSourceTag,
+  PaymentStatusBadge,
+  QualificationBadge,
+} from "@/components/crm/badges";
+import { MemberAvatar } from "@/components/crm/avatar";
 import {
   DeleteLicenseeButton,
   DeletePaymentButton,
+  NotesEditor,
   QualificationToggle,
 } from "@/components/crm/license-actions";
 import { LicenseeForm } from "@/components/crm/licensee-form";
 import { PaymentDialog } from "@/components/crm/payment-dialog";
-import {
-  eur,
-  formatDate,
-  PAYMENT_SOURCE_LABELS,
-} from "@/lib/format";
+import { eur, formatDate } from "@/lib/format";
 import { getCurrentSeason, getSeasonTariffs } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Fiche licencié",
 };
 
+function Cell({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="bg-card px-3.5 py-3">
+      <div className="text-[11px] font-semibold text-[#9C958D]">{label}</div>
+      <div className="mt-0.5 text-[13px] font-semibold">{value}</div>
+    </div>
+  );
+}
+
 export default async function LicenseePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { edit }] = await Promise.all([params, searchParams]);
   const supabase = await createClient();
 
   const [{ data: license }, season] = await Promise.all([
@@ -77,238 +80,295 @@ export default async function LicenseePage({
   const member = license.member;
   const f = financials;
   const balance = Number(f?.balance ?? 0);
+  const discounted = Number(f?.discount_rate ?? 0) > 0;
+  const qualified = license.status === "qualifiee";
+  const birthYear = member.birth_date
+    ? new Date(member.birth_date).getFullYear()
+    : null;
+  const memberName = `${member.first_name} ${member.last_name.toUpperCase()}`;
+
+  if (edit) {
+    return (
+      <div className="mx-auto max-w-[1000px] space-y-5">
+        <div className="flex items-center justify-between">
+          <Link
+            href={`/crm/licencies/${license.id}`}
+            className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-primary"
+          >
+            <ChevronLeft className="size-4" />
+            Retour à la fiche
+          </Link>
+          <DeleteLicenseeButton licenseId={license.id} memberId={member.id} />
+        </div>
+        <LicenseeForm
+          season={season}
+          tariffs={tariffs}
+          member={member}
+          license={license}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="-ml-2 mb-1 text-muted-foreground"
-          >
-            <Link href="/crm/licencies">
-              <ArrowLeft className="size-4" />
-              Licenciés
-            </Link>
-          </Button>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {member.last_name.toUpperCase()} {member.first_name}
-          </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <LicenseStatusBadge status={license.status} />
-            <PaymentStatusBadge status={f?.payment_status ?? null} />
-            {license.is_mutation && (
-              <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
-                Mutation
-              </span>
+    <div className="mx-auto max-w-[1000px] space-y-4">
+      <div className="flex items-center justify-between">
+        <Link
+          href="/crm/licencies"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-primary"
+        >
+          <ChevronLeft className="size-4" />
+          Retour à la liste
+        </Link>
+        <Link
+          href={`/crm/licencies/${license.id}?edit=1`}
+          className="flex items-center gap-1.5 rounded-[9px] border bg-card px-[13px] py-[7px] text-[12.5px] font-bold transition-colors hover:border-primary hover:text-primary"
+        >
+          <Pencil className="size-3.5" />
+          Modifier
+        </Link>
+      </div>
+
+      <div className="grid items-start gap-[18px] lg:grid-cols-[1.55fr_1fr]">
+        {/* -------- colonne gauche -------- */}
+        <div className="space-y-[18px]">
+          {/* identité */}
+          <div className="rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,.03)]">
+            <div className="flex items-start gap-4">
+              <MemberAvatar
+                firstName={member.first_name}
+                lastName={member.last_name}
+                size={60}
+              />
+              <div className="min-w-0">
+                <h2 className="font-display text-2xl font-extrabold tracking-[-.01em]">
+                  {memberName}
+                </h2>
+                <div className="mt-1 text-[13.5px] text-muted-foreground">
+                  {f?.category ?? "Catégorie non définie"}
+                  {license.team ? ` · ${license.team}` : ""}
+                  {birthYear ? ` · né(e) en ${birthYear}` : ""}
+                </div>
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  <PaymentStatusBadge status={f?.payment_status ?? null} />
+                  <QualificationBadge qualified={qualified} />
+                  {license.is_mutation && <MutationBadge />}
+                  {member.is_board && <BoardBadge />}
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] bg-muted">
+              <Cell label="Email" value={member.email ?? "—"} />
+              <Cell
+                label="Sexe"
+                value={
+                  member.sex === "F"
+                    ? "Féminin"
+                    : member.sex === "M"
+                      ? "Masculin"
+                      : "—"
+                }
+              />
+              <Cell label="Téléphone" value={member.phone ?? "—"} />
+              <Cell
+                label="Prise de licence"
+                value={formatDate(license.registered_at)}
+              />
+            </div>
+          </div>
+
+          {/* détail du tarif */}
+          <div className="rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,.03)]">
+            <div className="flex items-center justify-between">
+              <div className="micro-label">Détail du tarif</div>
+              {discounted && (
+                <span className="rounded-full bg-success-bg px-[11px] py-[3px] text-[11px] font-bold text-success">
+                  −5 % ligue · avant 10/08
+                </span>
+              )}
+            </div>
+            {f?.total_due != null ? (
+              <div className="mt-3">
+                <div className="flex items-center justify-between border-b border-muted py-2.5 text-[13.5px]">
+                  <span className="font-semibold text-muted-foreground">
+                    Part Fédérale
+                  </span>
+                  <span className="font-bold tabular-nums">
+                    {eur.format(Number(f.part_ffhb))}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-b border-muted py-2.5 text-[13.5px]">
+                  <span className="font-semibold text-muted-foreground">
+                    Part Ligue
+                  </span>
+                  <span className="font-bold tabular-nums">
+                    {discounted && (
+                      <span className="mr-2 font-semibold text-[#9C958D] line-through">
+                        {eur.format(Number(f.part_lbhb))}
+                      </span>
+                    )}
+                    {eur.format(Number(f.part_lbhb_effective))}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-b border-muted py-2.5 text-[13.5px]">
+                  <span className="font-semibold text-muted-foreground">
+                    Part Club
+                  </span>
+                  <span className="font-bold tabular-nums">
+                    {eur.format(Number(f.part_hbc))}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-3">
+                  <span className="font-display text-[15px] font-bold">
+                    Total dû
+                  </span>
+                  <span className="font-display text-xl font-extrabold tabular-nums">
+                    {eur.format(Number(f.total_due))}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Aucun tarif associé — choisissez la catégorie via « Modifier ».
+              </p>
             )}
-            {member.is_board && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-                Bureau
-              </span>
+          </div>
+
+          {/* paiements */}
+          <div className="rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,.03)]">
+            <div className="flex items-center justify-between">
+              <div className="micro-label">Paiements &amp; échéances</div>
+              <PaymentDialog
+                licenseId={license.id}
+                memberName={memberName}
+                balance={balance}
+              />
+            </div>
+            <div className="mt-4 space-y-2">
+              {(payments ?? []).length === 0 && (
+                <p className="py-3 text-center text-[13px] text-[#9C958D]">
+                  Aucun paiement enregistré pour l&apos;instant.
+                </p>
+              )}
+              {(payments ?? []).map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 rounded-[10px] bg-secondary px-[13px] py-[11px]"
+                >
+                  <PaymentSourceTag source={p.source} />
+                  <span className="text-xs text-muted-foreground">
+                    {formatDate(p.paid_at)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-[#b5aea3]">
+                    {p.reference ?? ""}
+                  </span>
+                  <span className="font-display text-[15px] font-bold tabular-nums">
+                    {eur.format(Number(p.amount))}
+                  </span>
+                  {p.source !== "helloasso" && (
+                    <DeletePaymentButton
+                      paymentId={p.id}
+                      licenseId={license.id}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            {f?.total_due != null && (
+              <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] bg-muted">
+                <div className="bg-card px-3.5 py-3">
+                  <div className="text-[11px] font-semibold text-[#9C958D]">
+                    Dû
+                  </div>
+                  <div className="mt-0.5 font-display text-base font-bold tabular-nums">
+                    {eur.format(Number(f.total_due))}
+                  </div>
+                </div>
+                <div className="bg-card px-3.5 py-3">
+                  <div className="text-[11px] font-semibold text-[#9C958D]">
+                    Encaissé
+                  </div>
+                  <div className="mt-0.5 font-display text-base font-bold tabular-nums text-success">
+                    {eur.format(Number(f.total_paid))}
+                  </div>
+                </div>
+                <div className="bg-card px-3.5 py-3">
+                  <div className="text-[11px] font-semibold text-[#9C958D]">
+                    Reste à charge
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-0.5 font-display text-base font-bold tabular-nums",
+                      balance > 10 ? "text-destructive" : "text-success"
+                    )}
+                  >
+                    {eur.format(balance)}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
-        <DeleteLicenseeButton licenseId={license.id} memberId={member.id} />
-      </div>
 
-      <Tabs defaultValue="fiche">
-        <TabsList>
-          <TabsTrigger value="fiche">Fiche</TabsTrigger>
-          <TabsTrigger value="modifier">Modifier</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="fiche" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>Tarif — {f?.category ?? "non défini"}</CardTitle>
-                <CardDescription>
-                  Prise de licence le {formatDate(license.registered_at)}
-                  {Number(f?.discount_rate ?? 0) > 0 &&
-                    " — réduction −5 % sur la part Ligue appliquée"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {f?.total_due != null ? (
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Part Fédé</span>
-                      <span className="tabular-nums">
-                        {eur.format(Number(f.part_ffhb))}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Part Ligue
-                        {Number(f.discount_rate) > 0 && (
-                          <span className="ml-1 text-emerald-600">(−5 %)</span>
-                        )}
-                      </span>
-                      <span className="tabular-nums">
-                        {eur.format(Number(f.part_lbhb_effective))}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Part Club</span>
-                      <span className="tabular-nums">
-                        {eur.format(Number(f.part_hbc))}
-                      </span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between font-semibold">
-                      <span>Total dû</span>
-                      <span className="tabular-nums">
-                        {eur.format(Number(f.total_due))}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Encaissé</span>
-                      <span className="tabular-nums">
-                        {eur.format(Number(f.total_paid))}
-                      </span>
-                    </div>
-                    <div
-                      className={`flex justify-between font-bold ${
-                        balance > 10 ? "text-orange-600" : "text-emerald-600"
-                      }`}
-                    >
-                      <span>Reste à charge</span>
-                      <span className="tabular-nums">
-                        {eur.format(balance)}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Aucun tarif associé — renseignez la catégorie dans
-                    l&apos;onglet Modifier.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Coordonnées</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
-                <p>Né·e le {formatDate(member.birth_date)}</p>
-                <p>{member.email ?? "—"}</p>
-                <p>{member.phone ?? "—"}</p>
-                <p className="text-muted-foreground">
-                  {[member.address, member.postal_code, member.city]
-                    .filter(Boolean)
-                    .join(", ") || "—"}
-                </p>
-                {license.team && <p>Équipe : {license.team}</p>}
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Qualification</CardTitle>
-              <CardDescription>
-                À cocher une fois la licence qualifiée par la ligue dans
-                Gesthand.
-                {license.qualified_at &&
-                  ` Qualifiée le ${formatDate(license.qualified_at)}.`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+        {/* -------- colonne droite (sticky) -------- */}
+        <div className="space-y-[18px] lg:sticky lg:top-[92px]">
+          <div className="rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,.03)]">
+            <div className="micro-label">Qualification Gesthand</div>
+            <div
+              className={cn(
+                "mt-3 flex items-start gap-3 rounded-[11px] px-3.5 py-3",
+                qualified ? "bg-success-bg" : "bg-warning-bg"
+              )}
+            >
+              {qualified ? (
+                <CheckCircle2 className="mt-0.5 size-[18px] shrink-0 text-success" />
+              ) : (
+                <Clock className="mt-0.5 size-[18px] shrink-0 text-warning-icon" />
+              )}
+              <div>
+                <div
+                  className={cn(
+                    "text-[13.5px] font-bold",
+                    qualified ? "text-success-strong" : "text-[#8a5a10]"
+                  )}
+                >
+                  {qualified ? "Licence qualifiée" : "En attente de qualification"}
+                </div>
+                <div
+                  className={cn(
+                    "text-xs",
+                    qualified ? "text-success" : "text-warning-icon"
+                  )}
+                >
+                  {qualified
+                    ? `le ${formatDate(license.qualified_at)}`
+                    : "à vérifier dans Gesthand"}
+                </div>
+              </div>
+            </div>
+            <div className="mt-3">
               <QualificationToggle
                 licenseId={license.id}
-                qualified={license.status === "qualifiee"}
+                qualified={qualified}
               />
-            </CardContent>
-          </Card>
+            </div>
+            <p className="mt-2.5 text-[11px] text-[#9C958D]">
+              Bascule manuelle (MVP). L&apos;automatisation par email Gesthand
+              est prévue en V2.
+            </p>
+          </div>
 
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <div>
-                <CardTitle>Paiements</CardTitle>
-                <CardDescription>
-                  HelloAsso remonte automatiquement — saisissez ici les autres
-                  moyens.
-                </CardDescription>
-              </div>
-              <PaymentDialog licenseId={license.id} />
-            </CardHeader>
-            <CardContent className="px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="pl-6">Date</TableHead>
-                    <TableHead>Moyen</TableHead>
-                    <TableHead>Référence</TableHead>
-                    <TableHead className="text-right">Montant</TableHead>
-                    <TableHead className="w-12" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(payments ?? []).length === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="py-6 text-center text-muted-foreground"
-                      >
-                        Aucun paiement enregistré.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {(payments ?? []).map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="pl-6">
-                        {formatDate(p.paid_at)}
-                      </TableCell>
-                      <TableCell>
-                        {PAYMENT_SOURCE_LABELS[p.source] ?? p.source}
-                      </TableCell>
-                      <TableCell className="max-w-48 truncate text-muted-foreground">
-                        {p.reference ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-medium tabular-nums">
-                        {eur.format(Number(p.amount))}
-                      </TableCell>
-                      <TableCell>
-                        {p.source !== "helloasso" && (
-                          <DeletePaymentButton
-                            paymentId={p.id}
-                            licenseId={license.id}
-                          />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {license.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notes</CardTitle>
-              </CardHeader>
-              <CardContent className="whitespace-pre-wrap text-sm">
-                {license.notes}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="modifier">
-          <LicenseeForm
-            season={season}
-            tariffs={tariffs}
-            member={member}
-            license={license}
-          />
-        </TabsContent>
-      </Tabs>
+          <div className="rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,.03)]">
+            <div className="micro-label">Notes</div>
+            <div className="mt-3">
+              <NotesEditor
+                licenseId={license.id}
+                initialNotes={license.notes ?? ""}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

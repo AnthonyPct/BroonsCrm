@@ -1,44 +1,101 @@
-import { Badge } from "@/components/ui/badge";
 import {
   LICENSE_STATUS_LABELS,
+  PAYMENT_SOURCE_LABELS,
   PAYMENT_STATUS_LABELS,
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+function Pill({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-block whitespace-nowrap rounded-full px-[11px] py-[3px] text-[11.5px] font-bold",
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
 export function LicenseStatusBadge({ status }: { status: string }) {
   return (
-    <Badge
-      variant="outline"
+    <Pill
       className={cn(
-        "whitespace-nowrap",
-        status === "a_saisir" && "border-slate-300 bg-slate-100 text-slate-700",
-        status === "attente_paiement" &&
-          "border-amber-300 bg-amber-100 text-amber-800",
-        status === "payee" &&
-          "border-emerald-300 bg-emerald-100 text-emerald-800",
-        status === "qualifiee" && "border-blue-300 bg-blue-100 text-blue-800"
+        status === "a_saisir" && "bg-muted text-muted-foreground",
+        status === "attente_paiement" && "bg-warning-bg text-warning",
+        status === "payee" && "bg-success-bg text-success",
+        status === "qualifiee" && "bg-success-bg text-success-strong"
       )}
     >
       {LICENSE_STATUS_LABELS[status] ?? status}
-    </Badge>
+    </Pill>
   );
 }
 
 export function PaymentStatusBadge({ status }: { status: string | null }) {
   if (!status) return null;
   return (
-    <Badge
-      variant="outline"
+    <Pill
       className={cn(
-        "whitespace-nowrap",
-        status === "payee" &&
-          "border-emerald-300 bg-emerald-100 text-emerald-800",
-        (status === "partielle" || status === "impayee") &&
-          "border-orange-300 bg-orange-100 text-orange-800",
-        status === "inconnu" && "border-slate-300 bg-slate-100 text-slate-600"
+        status === "payee" && "bg-success-bg text-success",
+        status === "partielle" && "bg-warning-bg text-warning",
+        status === "impayee" && "bg-accent text-destructive",
+        status === "inconnu" && "bg-muted text-muted-foreground"
       )}
     >
       {PAYMENT_STATUS_LABELS[status] ?? status}
-    </Badge>
+    </Pill>
+  );
+}
+
+export function QualificationBadge({ qualified }: { qualified: boolean }) {
+  return (
+    <Pill
+      className={
+        qualified
+          ? "bg-success-bg text-success"
+          : "bg-muted text-muted-foreground"
+      }
+    >
+      {qualified ? "Qualifiée" : "Non qualif."}
+    </Pill>
+  );
+}
+
+export function MutationBadge() {
+  return <Pill className="bg-violet-bg text-violet">Mutation</Pill>;
+}
+
+export function BoardBadge() {
+  return <Pill className="bg-warning-bg text-[#9a6a10]">Membre du bureau</Pill>;
+}
+
+const SOURCE_STYLES: Record<string, string> = {
+  helloasso: "bg-info-bg text-info",
+  passsport: "bg-violet-bg text-violet",
+  cheque: "bg-muted text-muted-foreground",
+  espece: "bg-muted text-muted-foreground",
+  ancv: "bg-success-bg text-success",
+  caf: "bg-success-bg text-success",
+  offert: "bg-warning-bg text-warning",
+};
+
+export function PaymentSourceTag({ source }: { source: string }) {
+  return (
+    <span
+      className={cn(
+        "flex-none rounded-lg px-[11px] py-[5px] text-[11px] font-bold",
+        SOURCE_STYLES[source] ?? "bg-muted text-muted-foreground"
+      )}
+    >
+      {PAYMENT_SOURCE_LABELS[source] ?? source}
+    </span>
   );
 }

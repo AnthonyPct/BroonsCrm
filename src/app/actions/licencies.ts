@@ -145,6 +145,16 @@ export async function toggleQualification(licenseId: string, qualified: boolean)
   revalidatePath("/crm/dashboard");
 }
 
+export async function saveLicenseNotes(licenseId: string, notes: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("licenses")
+    .update({ notes: notes || null })
+    .eq("id", licenseId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/crm/licencies/${licenseId}`);
+}
+
 export async function deleteLicensee(licenseId: string, memberId: string) {
   const supabase = await createClient();
   await supabase.from("licenses").delete().eq("id", licenseId);

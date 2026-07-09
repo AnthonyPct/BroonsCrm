@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Lock } from "lucide-react";
 
 export default function PublicLayout({
   children,
@@ -7,94 +8,79 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 border-b bg-[oklch(0.24_0.05_258)] text-white">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
+    <div className="flex min-h-screen flex-col bg-background">
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(23,19,15,.96)] backdrop-blur-md">
+        <div className="mx-auto flex h-[72px] w-full max-w-[1160px] items-center gap-3.5 px-7">
           <Link href="/" className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-full bg-[oklch(0.78_0.14_75)] text-sm font-black text-[oklch(0.22_0.05_258)]">
-              HBC
+            <span className="flex size-11 items-center justify-center overflow-hidden rounded-[11px] bg-white">
+              <Image
+                src="/logo.svg"
+                alt="HBC Pays de Broons"
+                width={40}
+                height={40}
+              />
             </span>
-            <span className="text-lg font-bold tracking-tight">
-              HBC Pays de Broons
+            <span className="leading-tight">
+              <span className="block font-display text-[15px] font-extrabold tracking-[-.01em] text-white">
+                HBC Pays de Broons
+              </span>
+              <span className="block text-[10.5px] font-semibold tracking-[.02em] text-[#c9c1b6]">
+                Handball Club
+              </span>
             </span>
           </Link>
-          <nav className="flex items-center gap-1 sm:gap-2">
-            <Button
-              asChild
-              variant="ghost"
-              className="text-white hover:bg-white/10 hover:text-white"
+          <div className="ml-auto flex items-center gap-1">
+            <Link
+              href="/#equipes"
+              className="hidden rounded-lg px-3.5 py-[9px] text-[13.5px] font-semibold text-[#e7e1d7] transition-colors hover:bg-white/10 hover:text-white sm:block"
             >
-              <Link href="/">Accueil</Link>
-            </Button>
-            <Button
-              asChild
-              className="bg-[oklch(0.78_0.14_75)] font-semibold text-[oklch(0.22_0.05_258)] hover:bg-[oklch(0.72_0.14_75)]"
+              Le club
+            </Link>
+            <Link
+              href="/#infos"
+              className="hidden rounded-lg px-3.5 py-[9px] text-[13.5px] font-semibold text-[#e7e1d7] transition-colors hover:bg-white/10 hover:text-white sm:block"
             >
-              <Link href="/licence">Prendre sa licence</Link>
-            </Button>
-          </nav>
+              Horaires &amp; lieu
+            </Link>
+            <Link
+              href="/#contact"
+              className="hidden rounded-lg px-3.5 py-[9px] text-[13.5px] font-semibold text-[#e7e1d7] transition-colors hover:bg-white/10 hover:text-white sm:block"
+            >
+              Contact
+            </Link>
+            <Link
+              href="/licence"
+              className="ml-2 rounded-[9px] bg-primary px-[18px] py-[11px] text-[13px] font-bold text-white shadow-[0_2px_10px_rgba(216,30,52,.35)] transition-colors hover:bg-[#e83049]"
+            >
+              Prendre sa licence
+            </Link>
+            <Link
+              href="/crm/login"
+              className="flex items-center gap-[5px] px-3 py-[9px] text-xs font-semibold text-[#9C958D] transition-colors hover:text-white"
+            >
+              <Lock className="size-3.5" />
+              Espace bureau
+            </Link>
+          </div>
         </div>
-      </header>
+      </nav>
+
       <main className="flex-1">{children}</main>
-      <footer className="border-t bg-[oklch(0.24_0.05_258)] text-white">
-        <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3">
-          <div>
-            <h3 className="mb-2 font-bold">HBC Pays de Broons</h3>
-            <p className="text-sm text-white/70">
-              Club de handball du Pays de Broons — Côtes-d&apos;Armor,
-              Bretagne.
-            </p>
-          </div>
-          <div>
-            <h3 className="mb-2 font-bold">Liens utiles</h3>
-            <ul className="space-y-1 text-sm text-white/70">
-              <li>
-                <a
-                  href="https://www.ffhandball.fr/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-white"
-                >
-                  FFHandball
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://gesthand.ffhandball.fr/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-white"
-                >
-                  Gesthand (licences)
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.helloasso.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-white"
-                >
-                  HelloAsso (paiement)
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-2 font-bold">Contact</h3>
-            <ul className="space-y-1 text-sm text-white/70">
-              <li>Salle des sports de Broons</li>
-              <li>22250 Broons</li>
-              <li>
-                <Link href="/crm/login" className="hover:text-white">
-                  Accès bureau
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-white/10 py-4 text-center text-xs text-white/50">
-          © {new Date().getFullYear()} HBC Pays de Broons
+
+      <footer className="border-t border-white/5 bg-[#100d0a] text-[#8a837a]">
+        <div className="mx-auto flex w-full max-w-[1160px] flex-wrap items-center gap-4 px-7 py-[34px]">
+          <span className="flex size-9 items-center justify-center overflow-hidden rounded-[9px] bg-white">
+            <Image src="/logo.svg" alt="" width={32} height={32} />
+          </span>
+          <span className="text-[13px] font-semibold text-[#c9c1b6]">
+            Handball Club du Pays de Broons
+          </span>
+          <span className="ml-auto text-xs">
+            © {new Date().getFullYear()} · Site du club ·{" "}
+            <Link href="/crm/login" className="transition-colors hover:text-white">
+              Espace bureau
+            </Link>
+          </span>
         </div>
       </footer>
     </div>
