@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
+  <defs>
+    <linearGradient id="ice" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7ED3E8"/>
+      <stop offset="100%" stop-color="#2E9AB5"/>
+    </linearGradient>
+  </defs>
+  <text x="160" y="60" text-anchor="middle" font-family="Archivo, Arial, sans-serif" font-weight="800" font-style="italic" font-size="44" fill="url(#ice)" stroke="#17130F" stroke-width="1">ICExpertise</text>
+  <text x="160" y="94" text-anchor="middle" font-family="Archivo, Arial, sans-serif" font-weight="700" font-size="13" fill="#17130F" letter-spacing="1.5">INGÉNIERIE · CONSEIL · EXPERTISE</text>
+</svg>

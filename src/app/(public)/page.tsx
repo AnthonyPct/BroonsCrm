@@ -232,9 +232,8 @@ export default function HomePage() {
                 <MapPin className="size-6" strokeWidth={2.2} />
               </div>
               <h2 className="mt-5 font-display text-2xl font-extrabold leading-tight">
-                Salle omnisports
-                <br />
-                de Broons
+                Salle du Chalet
+                <br />à Broons
               </h2>
               <p className="mt-3 text-sm font-medium leading-relaxed text-[#ffd9de]">
                 Rue du Stade
@@ -262,13 +261,27 @@ export default function HomePage() {
             Nos partenaires
           </h2>
         </div>
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
-          {["A", "B", "C", "D", "E", "F"].map((p) => (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[
+            { file: "caisse-epargne.svg", name: "Caisse d'Épargne" },
+            { file: "groupama.svg", name: "Groupama" },
+            { file: "intermarche.svg", name: "Intermarché" },
+            { file: "france-barnums.svg", name: "FranceBarnums.com" },
+            { file: "lechevestrier.svg", name: "Lechevestrier" },
+            { file: "icexpertise.svg", name: "ICExpertise" },
+            { file: "terre-et-vins.svg", name: "Terre & Vins" },
+          ].map((p) => (
             <div
-              key={p}
-              className="flex aspect-[3/2] items-center justify-center rounded-xl border bg-card text-[11.5px] font-bold tracking-[.03em] text-[#c3bcb0]"
+              key={p.file}
+              title={p.name}
+              className="flex aspect-[8/3] items-center justify-center rounded-xl border bg-card p-3 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(0,0,0,.07)]"
             >
-              Partenaire {p}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/partenaires/${p.file}`}
+                alt={p.name}
+                className="max-h-full max-w-full object-contain"
+              />
             </div>
           ))}
         </div>
@@ -300,13 +313,13 @@ export default function HomePage() {
               {
                 icon: Mail,
                 label: "Email",
-                value: "contact@hbc-paysdebroons.fr",
+                value: "5322002@handball-bretagne.fr",
               },
-              { icon: Phone, label: "Téléphone", value: "06 00 00 00 00" },
+              { icon: Phone, label: "Téléphone", value: "06 83 36 94 25" },
               {
                 icon: MapPin,
                 label: "Adresse",
-                value: "Salle omnisports, 22250 Broons",
+                value: "Salle du Chalet, rue du Stade, 22250 Broons",
               },
             ].map((row) => (
               <div

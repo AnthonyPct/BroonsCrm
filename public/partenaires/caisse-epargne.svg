@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
+  <rect x="18" y="24" width="72" height="72" rx="8" fill="#E30513"/>
+  <g stroke="#fff" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M34 82 C30 62 38 44 58 34 L76 36"/>
+    <path d="M30 52 h22 M28 62 h20 M30 72 h16"/>
+    <path d="M60 82 h18 M64 70 h12"/>
+  </g>
+  <circle cx="72" cy="56" r="4.5" fill="#fff"/>
+  <text x="106" y="58" font-family="Archivo, Arial, sans-serif" font-weight="800" font-size="30" fill="#3D4650">CAISSE</text>
+  <text x="106" y="92" font-family="Archivo, Arial, sans-serif" font-weight="800" font-size="30" fill="#3D4650">D'EPARGNE</text>
+</svg>

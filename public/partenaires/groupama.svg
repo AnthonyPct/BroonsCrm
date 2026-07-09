@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
+  <rect width="320" height="120" rx="10" fill="#00644E"/>
+  <g transform="translate(160,44)">
+    <path d="M-26 -6 A30 30 0 0 1 24 -18 L18 -8 A18 18 0 0 0 -14 -2 Z" fill="#F07D1A"/>
+    <g fill="#A8CF38">
+      <path d="M-24 4 L-4 4 L-8 22 C-16 20 -22 13 -24 4 Z"/>
+      <path d="M0 4 L14 4 L12 20 C6 22 0 22 -4 22 Z" transform="rotate(18)"/>
+      <path d="M-28 0 a30 14 0 0 0 8 18 L-14 4 Z" transform="rotate(-14)"/>
+    </g>
+    <path d="M-6 -6 L0 -14 L6 -6 Z M2 -6 L8 -12 L14 -6 Z" fill="#fff"/>
+  </g>
+  <text x="160" y="102" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-weight="700" font-size="30" fill="#fff">Groupama</text>
+</svg>
