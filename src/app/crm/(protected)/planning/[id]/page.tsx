@@ -51,7 +51,7 @@ export default async function MatchdayPage({
       supabase
         .from("licenses")
         .select(
-          "team_id, member:members(id, first_name, last_name, birth_date, can_table, can_referee, can_hall_manager)"
+          "team_id, member:members(id, first_name, last_name, birth_date, email, can_table, can_referee, can_hall_manager)"
         )
         .eq("season_id", season.id),
     ]);
@@ -138,6 +138,19 @@ export default async function MatchdayPage({
 
   const hallOptions: Option[] = rankHallManagers(members, matchday.date, counts);
 
+  // Convocation : emails de tous les désignés (Cci), et liste des sans-email
+  const assignedIds = new Set<string>(
+    planMatches.flatMap((m) => Object.values(m.assignments) as string[])
+  );
+  if (matchday.hall_manager_id) assignedIds.add(matchday.hall_manager_id);
+  const convocation = { emails: [] as string[], missing: [] as string[] };
+  for (const memberId of assignedIds) {
+    const member = members.find((m) => m.id === memberId);
+    if (!member) continue;
+    if (member.email) convocation.emails.push(member.email);
+    else convocation.missing.push(shortName(member.first_name, member.last_name));
+  }
+
   const rawLabel = new Intl.DateTimeFormat("fr-FR", {
     weekday: "long",
     day: "2-digit",
@@ -152,6 +165,8 @@ export default async function MatchdayPage({
   const board: BoardData = {
     matchdayId: matchday.id,
     dateLabel,
+    dateIso: matchday.date,
+    convocation,
     hallManager: {
       current: matchday.hall_manager
         ? {

@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import {
   ArrowDown,
   ArrowUp,
-  ClipboardCopy,
-  MessageCircle,
+  ImageDown,
+  Mail,
   Plus,
   Sparkles,
   Trash2,
@@ -52,10 +52,12 @@ export type BoardMatch = {
 export type BoardData = {
   matchdayId: string;
   dateLabel: string; // « Samedi 14/09 »
+  dateIso: string; // pour le nom du fichier exporté
   hallManager: { current: { id: string; label: string } | null; options: Option[] };
   matches: BoardMatch[];
   teams: { id: string; name: string }[];
   overflow: boolean;
+  convocation: { emails: string[]; missing: string[] };
 };
 
 const ROLE_TITLES: Record<string, string> = {
@@ -127,7 +129,7 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
   const [opponentEdits, setOpponentEdits] = useState<Record<string, string>>({});
   const [timeEdits, setTimeEdits] = useState<Record<string, string>>({});
 
-  function whatsappText(): string {
+  function convocationText(): string {
     const lines = [`🤾 ${data.dateLabel} — Salle du Chalet, Broons`];
     if (data.hallManager.current) {
       lines.push(`🧹 Responsable de salle : ${data.hallManager.current.label}`);
@@ -153,15 +155,148 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
     return lines.join("\n");
   }
 
-  function conclusionsText(): string {
-    return data.matches
-      .map((m) => `${m.teamName} — ${m.scheduledAt ?? "--:--"}`)
-      .join("\n");
+  function mailtoHref(): string {
+    const subject = `Convocation matchs à domicile — ${data.dateLabel}`;
+    const body = [
+      "Bonjour à tous,",
+      "",
+      "Vous êtes convoqués pour la journée à domicile :",
+      "",
+      convocationText(),
+    ].join("\n");
+    return `mailto:?bcc=${encodeURIComponent(data.convocation.emails.join(","))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
-  async function copy(text: string, message: string) {
-    await navigator.clipboard.writeText(text);
-    toast.success(message);
+  /** Génère l'affiche PNG du programme (Canvas, aux couleurs du club). */
+  async function exportImage() {
+    const W = 1080;
+    const headerH = 340;
+    const matchH = 170;
+    const footerH = 130;
+    const H = headerH + data.matches.length * matchH + footerH;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d")!;
+
+    const css = getComputedStyle(document.documentElement);
+    const display =
+      css.getPropertyValue("--font-archivo").trim() || "Archivo, sans-serif";
+    const sans =
+      css.getPropertyValue("--font-manrope").trim() || "Manrope, sans-serif";
+
+    // fond + décor
+    ctx.fillStyle = "#17130F";
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(216,30,52,.18)";
+    ctx.lineWidth = 52;
+    ctx.beginPath();
+    ctx.arc(W - 60, 90, 250, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(216,30,52,.32)";
+    ctx.lineWidth = 26;
+    ctx.beginPath();
+    ctx.arc(W - 130, 150, 130, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(216,30,52,.14)";
+    ctx.lineWidth = 40;
+    ctx.beginPath();
+    ctx.arc(40, H - 40, 180, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // logo dans une tuile blanche
+    try {
+      const logo = new Image();
+      logo.src = "/logo.png";
+      await new Promise((resolve, reject) => {
+        logo.onload = resolve;
+        logo.onerror = reject;
+      });
+      const tile = 110;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.roundRect(60, 54, tile, tile, 24);
+      ctx.fill();
+      ctx.drawImage(logo, 68, 62, tile - 16, tile - 16);
+    } catch {
+      // sans logo, l'affiche reste valable
+    }
+
+    // titres
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `900 58px ${display}`;
+    ctx.fillText("Matchs à domicile", 200, 118);
+    ctx.fillStyle = "#ff4258";
+    ctx.font = `800 40px ${display}`;
+    ctx.fillText(data.dateLabel, 200, 168);
+    ctx.fillStyle = "#c9c1b6";
+    ctx.font = `600 26px ${sans}`;
+    ctx.fillText("Salle du Chalet — rue du Stade, Broons", 60, 232);
+    if (data.hallManager.current) {
+      ctx.fillText(
+        `Responsable de salle : ${data.hallManager.current.label}`,
+        60,
+        270
+      );
+    }
+    ctx.strokeStyle = "rgba(255,255,255,.14)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(60, headerH - 40);
+    ctx.lineTo(W - 60, headerH - 40);
+    ctx.stroke();
+
+    // matchs
+    data.matches.forEach((m, i) => {
+      const y = headerH + i * matchH;
+      ctx.fillStyle = "#ff4258";
+      ctx.font = `800 46px ${display}`;
+      ctx.fillText(m.scheduledAt?.replace(":", "h") ?? "--h--", 60, y + 46);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `800 40px ${display}`;
+      ctx.fillText(
+        `${m.teamName}${m.opponent ? `  vs  ${m.opponent}` : ""}`,
+        250,
+        y + 46
+      );
+      const t1 = m.assignments.table_1?.label;
+      const t2 = m.assignments.table_2?.label;
+      const details: string[] = [];
+      if (t1 || t2) details.push(`Table : ${[t1, t2].filter(Boolean).join(" & ")}`);
+      details.push(
+        m.isYouth
+          ? `Arbitre : ${m.assignments.referee?.label ?? "à désigner"}`
+          : "Arbitre : comité"
+      );
+      ctx.fillStyle = "#c9c1b6";
+      ctx.font = `600 27px ${sans}`;
+      ctx.fillText(details.join("   ·   "), 250, y + 96);
+      if (i < data.matches.length - 1) {
+        ctx.strokeStyle = "rgba(255,255,255,.08)";
+        ctx.beginPath();
+        ctx.moveTo(60, y + matchH - 30);
+        ctx.lineTo(W - 60, y + matchH - 30);
+        ctx.stroke();
+      }
+    });
+
+    // pied
+    ctx.fillStyle = "#D81E34";
+    ctx.beginPath();
+    ctx.roundRect(60, H - 96, 420, 56, 999);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `700 26px ${sans}`;
+    ctx.fillText("hbcpaysdebroons.fr", 100, H - 58);
+    ctx.fillStyle = "#8a837a";
+    ctx.fillText("Entrée libre — venez nous encourager !", 520, H - 58);
+
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `programme-${data.dateIso}.png`;
+    a.click();
+    toast.success("Affiche téléchargée — prête à partager sur WhatsApp");
   }
 
   return (
@@ -209,23 +344,36 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
           <Sparkles className="size-3.5" />
           Assigner automatiquement
         </button>
-        <button
-          disabled={data.matches.length === 0}
-          onClick={() =>
-            copy(conclusionsText(), "Conclusions copiées — à coller dans Gesthand")
-          }
-          className="flex items-center gap-1.5 rounded-[9px] border bg-card px-3.5 py-2 text-[12.5px] font-bold transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+        <a
+          href={data.convocation.emails.length ? mailtoHref() : undefined}
+          onClick={(e) => {
+            if (!data.convocation.emails.length) {
+              e.preventDefault();
+              toast.error("Aucun convoqué n'a d'email renseigné");
+              return;
+            }
+            if (data.convocation.missing.length) {
+              toast.warning(
+                `Sans email : ${data.convocation.missing.join(", ")} — à prévenir autrement`
+              );
+            }
+          }}
+          aria-disabled={!data.convocation.emails.length}
+          className={cn(
+            "flex items-center gap-1.5 rounded-[9px] border bg-card px-3.5 py-2 text-[12.5px] font-bold transition-colors hover:border-primary hover:text-primary",
+            !data.convocation.emails.length && "cursor-not-allowed opacity-50"
+          )}
         >
-          <ClipboardCopy className="size-3.5" />
-          Copier les conclusions Gesthand
-        </button>
+          <Mail className="size-3.5" />
+          Envoyer le mail aux convoqués
+        </a>
         <button
           disabled={data.matches.length === 0}
-          onClick={() => copy(whatsappText(), "Message copié — à coller dans WhatsApp")}
+          onClick={() => exportImage()}
           className="flex items-center gap-1.5 rounded-[9px] bg-success px-3.5 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-success-strong disabled:opacity-50"
         >
-          <MessageCircle className="size-3.5" />
-          Copier pour WhatsApp
+          <ImageDown className="size-3.5" />
+          Exporter l&apos;affiche (PNG)
         </button>
       </div>
 

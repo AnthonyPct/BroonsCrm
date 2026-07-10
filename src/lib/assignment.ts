@@ -11,6 +11,7 @@ export type PlanMember = {
   first_name: string;
   last_name: string;
   birth_date: string | null;
+  email?: string | null;
   can_table: boolean;
   can_referee: boolean;
   can_hall_manager: boolean;
