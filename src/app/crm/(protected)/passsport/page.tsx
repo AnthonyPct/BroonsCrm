@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Info } from "lucide-react";
 import { MemberAvatar } from "@/components/crm/avatar";
-import { AidStatusSelect } from "@/components/crm/aid-status-select";
+import {
+  AidCodeInput,
+  AidStatusSelect,
+} from "@/components/crm/aid-status-select";
 import { eur, formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -32,13 +35,19 @@ export default async function PassSportPage() {
 
   const sum = (status: string) =>
     rows
-      .filter((p) => (p.aid_status ?? "code_recu") === status)
+      .filter((p) => (p.aid_status ?? "attente_code") === status)
       .reduce((s, p) => s + Number(p.amount), 0);
   const count = (status: string) =>
-    rows.filter((p) => (p.aid_status ?? "code_recu") === status).length;
-  const toRecover = sum("code_recu") + sum("deduit");
+    rows.filter((p) => (p.aid_status ?? "attente_code") === status).length;
+  const toRecover = sum("attente_code") + sum("code_recu") + sum("deduit");
 
   const kpis = [
+    {
+      label: "En attente du code",
+      value: count("attente_code"),
+      amount: sum("attente_code"),
+      color: "text-muted-foreground",
+    },
     {
       label: "Codes reçus",
       value: count("code_recu"),
@@ -46,13 +55,13 @@ export default async function PassSportPage() {
       color: "text-warning",
     },
     {
-      label: "Déduits (à déclarer)",
+      label: "Déclarés à l'État",
       value: count("deduit"),
       amount: sum("deduit"),
       color: "text-info",
     },
     {
-      label: "Remboursés par l'État",
+      label: "Remboursés",
       value: count("rembourse"),
       amount: sum("rembourse"),
       color: "text-success",
@@ -85,10 +94,10 @@ export default async function PassSportPage() {
         <p className="text-[12.5px] leading-relaxed text-[#8a5a10]">
           Le club avance le montant des codes Pass&apos;Sport et se fait
           rembourser par l&apos;État (via Le Compte Asso).{" "}
-          <strong>
-            Reste à récupérer : {eur.format(toRecover)}
-          </strong>
-          . Passez chaque code en « Remboursé » quand le versement arrive.
+          <strong>Reste à récupérer : {eur.format(toRecover)}</strong>. Le code
+          arrive souvent des mois après la licence : saisissez-le directement
+          dans la colonne Code dès réception, puis faites avancer le statut
+          jusqu&apos;à « Remboursé ».
         </p>
       </div>
 
@@ -133,8 +142,8 @@ export default async function PassSportPage() {
                 {p.licenses.member.last_name.toUpperCase()}
               </span>
             </Link>
-            <div className="truncate font-mono text-xs text-[#3d3a35]">
-              {p.reference ?? "—"}
+            <div className="pr-3">
+              <AidCodeInput paymentId={p.id} reference={p.reference} />
             </div>
             <div className="font-bold tabular-nums">
               {eur.format(Number(p.amount))}
@@ -143,7 +152,7 @@ export default async function PassSportPage() {
             <div>
               <AidStatusSelect
                 paymentId={p.id}
-                status={p.aid_status ?? "code_recu"}
+                status={p.aid_status ?? "attente_code"}
               />
             </div>
           </div>
