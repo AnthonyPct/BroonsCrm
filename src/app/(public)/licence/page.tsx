@@ -9,7 +9,10 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Prendre sa licence",
+  title: "Prendre sa licence de handball à Broons",
+  description:
+    "Comment prendre sa licence au HBC Pays de Broons : inscription Gesthand, pièces à fournir, tarifs (dès 157 €), paiement HelloAsso en 3 fois, Pass'Sport, CAF et ANCV acceptés. Réduction −5 % avant le 10 août.",
+  alternates: { canonical: "/licence" },
 };
 
 type Etape = {
@@ -100,9 +103,23 @@ const FAQ: { q: string; a: string }[] = [
   },
 ];
 
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: { "@type": "Answer", text: item.a },
+  })),
+};
+
 export default function LicencePage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }}
+      />
       {/* header band */}
       <section className="relative overflow-hidden bg-[#17130F] text-white">
         <div

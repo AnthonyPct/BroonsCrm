@@ -61,9 +61,9 @@ export default function HomePage() {
               <span className="text-[#ff4258]">on le vit ensemble.</span>
             </h1>
             <p className="mt-[22px] max-w-[480px] text-[17px] font-medium leading-relaxed text-[#d8d1c6]">
-              Un club familial au cœur du Pays de Broons. De l&apos;école de
-              hand aux séniors, on joue, on progresse et on partage — quel que
-              soit ton niveau.
+              Le club de handball du Pays de Broons, en Côtes-d&apos;Armor
+              (22). De l&apos;école de hand dès 7 ans aux équipes séniors, on
+              joue, on progresse et on partage — quel que soit ton niveau.
             </p>
             <div className="mt-[34px] flex flex-wrap gap-[13px]">
               <Link

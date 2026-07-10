@@ -6,6 +6,7 @@ import { signIn } from "@/app/actions/auth";
 
 export const metadata: Metadata = {
   title: "Connexion CRM",
+  robots: { index: false, follow: false },
 };
 
 export default async function LoginPage({

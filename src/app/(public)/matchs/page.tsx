@@ -3,7 +3,10 @@ import { CalendarDays } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Matchs à domicile",
+  title: "Matchs de handball à Broons — programme à domicile",
+  description:
+    "Le programme des matchs de handball à domicile du HBC Pays de Broons, à la salle du Chalet (rue du Stade, 22250 Broons). Entrée libre, venez encourager les équipes du club !",
+  alternates: { canonical: "/matchs" },
 };
 
 export const revalidate = 300; // programme rafraîchi toutes les 5 min

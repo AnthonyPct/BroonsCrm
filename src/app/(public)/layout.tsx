@@ -2,6 +2,36 @@ import Image from "next/image";
 import Link from "next/link";
 import { Lock } from "lucide-react";
 
+// Données structurées lues par Google et les assistants IA
+const CLUB_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "SportsClub",
+  name: "HBC Pays de Broons",
+  alternateName: [
+    "Handball Club du Pays de Broons",
+    "HBC Broons",
+    "hbcpaysdebroons",
+  ],
+  sport: "Handball",
+  url: "https://hbcpaysdebroons.fr",
+  logo: "https://hbcpaysdebroons.fr/logo.png",
+  image: "https://hbcpaysdebroons.fr/og.png",
+  email: "5322002@handball-bretagne.fr",
+  telephone: "+33683369425",
+  foundingDate: "1978",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "Salle du Chalet, rue du Stade",
+    postalCode: "22250",
+    addressLocality: "Broons",
+    addressRegion: "Bretagne",
+    addressCountry: "FR",
+  },
+  areaServed: "Pays de Broons, Côtes-d'Armor (22)",
+  description:
+    "Club de handball à Broons (Côtes-d'Armor) : école de hand dès 7 ans, équipes jeunes U11 à U18 et séniors masculins et féminins. Entraînements à la salle du Chalet, matchs à domicile le week-end.",
+};
+
 export default function PublicLayout({
   children,
 }: {
@@ -9,6 +39,10 @@ export default function PublicLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(CLUB_JSON_LD) }}
+      />
       <nav className="sticky top-0 z-50 border-b border-white/10 bg-[rgba(23,19,15,.96)] backdrop-blur-md">
         <div className="mx-auto flex h-[72px] w-full max-w-[1160px] items-center gap-2 px-4 sm:gap-3.5 sm:px-7">
           <Link href="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
