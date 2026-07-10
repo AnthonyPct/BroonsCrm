@@ -111,13 +111,13 @@ export default async function ReconciliationPage() {
       </div>
 
       {/* commandes rapprochées */}
-      <div className="overflow-hidden rounded-2xl border bg-card shadow-[0_1px_2px_rgba(0,0,0,.03)]">
+      <div className="overflow-x-auto rounded-2xl border bg-card shadow-[0_1px_2px_rgba(0,0,0,.03)]">
         <div className="border-b px-6 py-4">
           <h2 className="font-display text-base font-bold">
             Commandes rapprochées ({matched.length})
           </h2>
         </div>
-        <div className="grid grid-cols-[1.2fr_1.4fr_1.4fr_1fr] border-b bg-secondary px-6 py-3">
+        <div className="grid min-w-[560px] grid-cols-[1.2fr_1.4fr_1.4fr_1fr] border-b bg-secondary px-6 py-3">
           {["Date", "Payeur", "Licencié", "Montant"].map((h) => (
             <div
               key={h}
@@ -135,7 +135,7 @@ export default async function ReconciliationPage() {
         {matched.map((o) => (
           <div
             key={o.id}
-            className="grid grid-cols-[1.2fr_1.4fr_1.4fr_1fr] items-center border-b border-muted px-6 py-3 text-[13.5px] last:border-b-0"
+            className="grid min-w-[560px] grid-cols-[1.2fr_1.4fr_1.4fr_1fr] items-center border-b border-muted px-6 py-3 text-[13.5px] last:border-b-0"
           >
             <div className="text-muted-foreground">
               {formatDate(o.order_date)}

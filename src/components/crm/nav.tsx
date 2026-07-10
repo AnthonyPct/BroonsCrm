@@ -105,6 +105,43 @@ export function CrmNav({
   );
 }
 
+/** Barre de navigation mobile : pills horizontales scrollables. */
+export function CrmMobileNav({ pendingCount }: { pendingCount: number }) {
+  const pathname = usePathname();
+  const links = SECTIONS.flatMap((s) => [...s.links]);
+
+  return (
+    <nav className="flex gap-1.5">
+      {links.map((link) => {
+        const active =
+          pathname === link.href || pathname.startsWith(link.href + "/");
+        const showBadge =
+          "counter" in link && link.counter === "pending" && pendingCount > 0;
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
+              active
+                ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                : "text-sidebar-foreground"
+            )}
+          >
+            <link.icon className="size-3.5 shrink-0" strokeWidth={2} />
+            {link.label}
+            {showBadge && (
+              <span className="rounded-full bg-primary px-1.5 text-[10.5px] font-bold text-white">
+                {pendingCount}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 const PAGE_TITLES: [string, string][] = [
   ["/crm/dashboard", "Tableau de bord"],
   ["/crm/licencies/nouveau", "Nouveau licencié"],

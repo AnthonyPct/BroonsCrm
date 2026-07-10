@@ -275,11 +275,11 @@ export function ImportTool({
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-[14px] border bg-card">
+          <div className="overflow-x-auto rounded-[14px] border bg-card">
             <div className="border-b bg-secondary px-5 py-3 text-[12.5px] font-semibold text-muted-foreground">
               {`${fileName} — ${rows.length} licencié(s) détecté(s). Vérifiez l'aperçu puis lancez l'import (les doublons déjà importés seront ignorés).`}
             </div>
-            <div className="grid grid-cols-[1.8fr_1fr_1fr_.6fr_1.1fr] border-b bg-secondary px-5 py-2.5">
+            <div className="grid min-w-[620px] grid-cols-[1.8fr_1fr_1fr_.6fr_1.1fr] border-b bg-secondary px-5 py-2.5">
               {["Licencié", "Naissance", "Email", "Sexe", "Détection"].map(
                 (h) => (
                   <div
@@ -295,7 +295,7 @@ export function ImportTool({
               {rows.slice(0, 200).map((r, i) => (
                 <div
                   key={i}
-                  className="grid grid-cols-[1.8fr_1fr_1fr_.6fr_1.1fr] items-center border-b border-muted px-5 py-2.5 text-[13px] last:border-b-0"
+                  className="grid min-w-[620px] grid-cols-[1.8fr_1fr_1fr_.6fr_1.1fr] items-center border-b border-muted px-5 py-2.5 text-[13px] last:border-b-0"
                 >
                   <div className="font-bold">
                     {r.first_name} {r.last_name.toUpperCase()}

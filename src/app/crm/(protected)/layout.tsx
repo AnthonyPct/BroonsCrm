@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
-import { CrmNav, PageTitle } from "@/components/crm/nav";
+import { CrmMobileNav, CrmNav, PageTitle } from "@/components/crm/nav";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function CrmLayout({
@@ -84,9 +84,18 @@ export default async function CrmLayout({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-[rgba(245,243,239,.85)] px-7 backdrop-blur-md">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-[rgba(245,243,239,.85)] px-4 backdrop-blur-md md:px-7">
           <PageTitle />
-          <div className="ml-auto hidden items-center gap-3 sm:flex">
+          <form action={signOut} className="ml-auto md:hidden">
+            <button
+              type="submit"
+              title="Se déconnecter"
+              className="flex size-8 items-center justify-center rounded-lg text-muted-foreground"
+            >
+              <LogOut className="size-4" />
+            </button>
+          </form>
+          <div className="ml-auto hidden items-center gap-3 md:flex">
             <span className="flex items-center gap-2 rounded-full border bg-card px-3.5 py-[7px] text-[12.5px] font-semibold text-muted-foreground">
               <span className="size-2 rounded-full bg-success shadow-[0_0_0_3px_rgba(31,138,91,.15)]" />
               Webhook HelloAsso actif
@@ -97,14 +106,11 @@ export default async function CrmLayout({
           </div>
         </header>
 
-        <nav className="flex gap-1 overflow-x-auto border-b bg-sidebar px-2 py-2 text-sidebar-foreground md:hidden">
-          <CrmNav
-            licenseeCount={licenseeCount ?? 0}
-            pendingCount={pendingCount ?? 0}
-          />
-        </nav>
+        <div className="sticky top-16 z-10 overflow-x-auto border-b bg-sidebar px-3 py-2 md:hidden">
+          <CrmMobileNav pendingCount={pendingCount ?? 0} />
+        </div>
 
-        <main className="flex-1 bg-background p-7">{children}</main>
+        <main className="flex-1 bg-background p-4 md:p-7">{children}</main>
       </div>
     </div>
   );

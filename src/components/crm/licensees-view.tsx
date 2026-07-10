@@ -159,8 +159,8 @@ export function LicenseesView({
 
       {/* ------- TABLEAU ------- */}
       {view === "Tableau" && (
-        <div className="overflow-hidden rounded-[14px] border bg-card">
-          <div className="grid grid-cols-[2.2fr_1.2fr_1fr_1fr_1.1fr_1.3fr] border-b bg-secondary px-5 py-3">
+        <div className="overflow-x-auto rounded-[14px] border bg-card">
+          <div className="grid min-w-[820px] grid-cols-[2.2fr_1.2fr_1fr_1fr_1.1fr_1.3fr] border-b bg-secondary px-5 py-3">
             {["Licencié", "Équipe", "Dû", "Reste", "Paiement", "Qualification"].map(
               (h) => (
                 <div
@@ -187,7 +187,7 @@ export function LicenseesView({
               <button
                 key={l.id}
                 onClick={() => router.push(`/crm/licencies/${l.id}`)}
-                className="grid w-full grid-cols-[2.2fr_1.2fr_1fr_1fr_1.1fr_1.3fr] items-center border-b border-muted px-5 py-[13px] text-left text-[13.5px] transition-colors last:border-b-0 hover:bg-[#FBFAF7]"
+                className="grid w-full min-w-[820px] grid-cols-[2.2fr_1.2fr_1fr_1fr_1.1fr_1.3fr] items-center border-b border-muted px-5 py-[13px] text-left text-[13.5px] transition-colors last:border-b-0 hover:bg-[#FBFAF7]"
               >
                 <div className="flex items-center gap-3">
                   <MemberAvatar
