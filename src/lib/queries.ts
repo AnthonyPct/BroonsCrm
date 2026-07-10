@@ -10,6 +10,7 @@ export type Financials = Tables<"license_financials">;
 export type LicenseeRow = License & {
   member: Member;
   tariff: Tables<"tariff_grid"> | null;
+  club_team: { id: string; name: string } | null;
   financials: Financials | null;
 };
 
@@ -30,7 +31,9 @@ export async function getSeasonLicensees(
   const [{ data: licenses }, { data: financials }] = await Promise.all([
     supabase
       .from("licenses")
-      .select("*, member:members(*), tariff:tariff_grid(*)")
+      .select(
+        "*, member:members(*), tariff:tariff_grid(*), club_team:teams(id, name)"
+      )
       .eq("season_id", seasonId),
     supabase.from("license_financials").select("*").eq("season_id", seasonId),
   ]);
@@ -47,6 +50,16 @@ export async function getSeasonLicensees(
         "fr"
       )
     );
+}
+
+export async function getSeasonTeams(seasonId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("season_id", seasonId)
+    .order("sort_order");
+  return data ?? [];
 }
 
 export async function getSeasonTariffs(seasonId: string) {

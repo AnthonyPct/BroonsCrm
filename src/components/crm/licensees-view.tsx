@@ -205,7 +205,7 @@ export function LicenseesView({
                   </div>
                 </div>
                 <div className="truncate text-muted-foreground">
-                  {l.team ?? "—"}
+                  {l.club_team?.name ?? "—"}
                 </div>
                 <div className="font-semibold tabular-nums">
                   {f?.total_due != null ? eur.format(Number(f.total_due)) : "—"}
@@ -274,7 +274,7 @@ export function LicenseesView({
                             {l.member.last_name.toUpperCase()}
                           </div>
                           <div className="text-[11px] text-[#9C958D]">
-                            {l.team ?? shortCategory(l.tariff?.category)}
+                            {l.club_team?.name ?? shortCategory(l.tariff?.category)}
                           </div>
                         </div>
                       </div>
@@ -323,7 +323,7 @@ export function LicenseesView({
                       {l.member.first_name} {l.member.last_name.toUpperCase()}
                     </div>
                     <div className="text-xs text-[#9C958D]">
-                      {l.team ?? shortCategory(l.tariff?.category)}
+                      {l.club_team?.name ?? shortCategory(l.tariff?.category)}
                       {birthYear ? ` · ${birthYear}` : ""}
                     </div>
                   </div>

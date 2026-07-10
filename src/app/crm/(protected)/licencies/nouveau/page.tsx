@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { LicenseeForm } from "@/components/crm/licensee-form";
-import { getCurrentSeason, getSeasonTariffs } from "@/lib/queries";
+import {
+  getCurrentSeason,
+  getSeasonTariffs,
+  getSeasonTeams,
+} from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "Nouveau licencié",
@@ -13,7 +17,10 @@ export default async function NewLicenseePage() {
   if (!season) {
     return <p>Aucune saison active.</p>;
   }
-  const tariffs = await getSeasonTariffs(season.id);
+  const [tariffs, teams] = await Promise.all([
+    getSeasonTariffs(season.id),
+    getSeasonTeams(season.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -24,7 +31,7 @@ export default async function NewLicenseePage() {
         <ChevronLeft className="size-4" />
         Retour à la liste
       </Link>
-      <LicenseeForm season={season} tariffs={tariffs} />
+      <LicenseeForm season={season} tariffs={tariffs} teams={teams} />
     </div>
   );
 }

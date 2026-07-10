@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { findTariffForBirthYear } from "@/lib/tariffs";
+import { findTeamFor } from "@/lib/planning";
 import type { Database } from "@/lib/database.types";
 
 type LicenseStatus = Database["public"]["Enums"]["license_status"];
@@ -33,6 +34,9 @@ export async function saveLicensee(formData: FormData) {
     postal_code: str(formData, "postal_code"),
     city: str(formData, "city"),
     is_board: formData.get("is_board") === "on",
+    can_table: formData.get("can_table") === "on",
+    can_referee: formData.get("can_referee") === "on",
+    can_hall_manager: formData.get("can_hall_manager") === "on",
     notes: str(formData, "member_notes"),
   };
   if (!member.first_name || !member.last_name) {
@@ -56,6 +60,10 @@ export async function saveLicensee(formData: FormData) {
     finalMemberId = data.id;
   }
 
+  const birthYear = member.birth_date
+    ? new Date(member.birth_date).getFullYear()
+    : null;
+
   // Tarif : override explicite ou catégorie auto par année de naissance
   let tariffId = str(formData, "tariff_id");
   if (tariffId === "auto" || !tariffId) {
@@ -63,18 +71,26 @@ export async function saveLicensee(formData: FormData) {
       .from("tariff_grid")
       .select("*")
       .eq("season_id", seasonId);
-    const birthYear = member.birth_date
-      ? new Date(member.birth_date).getFullYear()
-      : null;
     tariffId = findTariffForBirthYear(tariffs ?? [], birthYear)?.id ?? null;
   }
+
+  // Équipe : override explicite ou affectation auto (année de naissance + sexe)
+  let teamId = str(formData, "team_id");
+  if (teamId === "auto" || !teamId) {
+    const { data: teams } = await supabase
+      .from("teams")
+      .select("*")
+      .eq("season_id", seasonId);
+    teamId = findTeamFor(teams ?? [], birthYear, member.sex)?.id ?? null;
+  }
+  if (teamId === "none") teamId = null;
 
   const license = {
     member_id: finalMemberId!,
     season_id: seasonId,
     tariff_id: tariffId,
+    team_id: teamId,
     status: (str(formData, "status") ?? "a_saisir") as LicenseStatus,
-    team: str(formData, "team"),
     is_mutation: formData.get("is_mutation") === "on",
     registered_at:
       str(formData, "registered_at") ?? new Date().toISOString().slice(0, 10),

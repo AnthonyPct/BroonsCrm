@@ -147,6 +147,7 @@ export type Database = {
           status: Database["public"]["Enums"]["license_status"]
           tariff_id: string | null
           team: string | null
+          team_id: string | null
           updated_at: string
         }
         Insert: {
@@ -161,6 +162,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["license_status"]
           tariff_id?: string | null
           team?: string | null
+          team_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -175,6 +177,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["license_status"]
           tariff_id?: string | null
           team?: string | null
+          team_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -199,12 +202,157 @@ export type Database = {
             referencedRelation: "tariff_grid"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "licenses_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          member_id: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          member_id: string
+          role: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          member_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_assignments_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matchday_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_assignments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matchday_matches: {
+        Row: {
+          created_at: string
+          id: string
+          matchday_id: string
+          opponent: string
+          scheduled_at: string | null
+          sort_order: number
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matchday_id: string
+          opponent?: string
+          scheduled_at?: string | null
+          sort_order?: number
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matchday_id?: string
+          opponent?: string
+          scheduled_at?: string | null
+          sort_order?: number
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchday_matches_matchday_id_fkey"
+            columns: ["matchday_id"]
+            isOneToOne: false
+            referencedRelation: "matchdays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchday_matches_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matchdays: {
+        Row: {
+          created_at: string
+          date: string
+          hall_manager_id: string | null
+          id: string
+          notes: string | null
+          season_id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          hall_manager_id?: string | null
+          id?: string
+          notes?: string | null
+          season_id: string
+          start_time?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          hall_manager_id?: string | null
+          id?: string
+          notes?: string | null
+          season_id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchdays_hall_manager_id_fkey"
+            columns: ["hall_manager_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchdays_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
         ]
       }
       members: {
         Row: {
           address: string | null
           birth_date: string | null
+          can_hall_manager: boolean
+          can_referee: boolean
+          can_table: boolean
           city: string | null
           created_at: string
           email: string | null
@@ -221,6 +369,9 @@ export type Database = {
         Insert: {
           address?: string | null
           birth_date?: string | null
+          can_hall_manager?: boolean
+          can_referee?: boolean
+          can_table?: boolean
           city?: string | null
           created_at?: string
           email?: string | null
@@ -237,6 +388,9 @@ export type Database = {
         Update: {
           address?: string | null
           birth_date?: string | null
+          can_hall_manager?: boolean
+          can_referee?: boolean
+          can_table?: boolean
           city?: string | null
           created_at?: string
           email?: string | null
@@ -389,6 +543,59 @@ export type Database = {
           },
         ]
       }
+      teams: {
+        Row: {
+          birth_year_max: number | null
+          birth_year_min: number | null
+          created_at: string
+          gender: string | null
+          id: string
+          is_youth: boolean
+          match_duration_minutes: number
+          name: string
+          season_id: string
+          sort_order: number
+          updated_at: string
+          warmup_minutes: number
+        }
+        Insert: {
+          birth_year_max?: number | null
+          birth_year_min?: number | null
+          created_at?: string
+          gender?: string | null
+          id?: string
+          is_youth?: boolean
+          match_duration_minutes?: number
+          name: string
+          season_id: string
+          sort_order?: number
+          updated_at?: string
+          warmup_minutes?: number
+        }
+        Update: {
+          birth_year_max?: number | null
+          birth_year_min?: number | null
+          created_at?: string
+          gender?: string | null
+          id?: string
+          is_youth?: boolean
+          match_duration_minutes?: number
+          name?: string
+          season_id?: string
+          sort_order?: number
+          updated_at?: string
+          warmup_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       license_financials: {
@@ -435,7 +642,9 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: string
       }
+      get_public_matchdays: { Args: never; Returns: Json }
       norm_text: { Args: { t: string }; Returns: string }
+      reconcile_all_ha_orders: { Args: never; Returns: Json }
       try_match_ha_order: { Args: { p_order_id: string }; Returns: boolean }
     }
     Enums: {

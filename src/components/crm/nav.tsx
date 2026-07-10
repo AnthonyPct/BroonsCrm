@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
   GitBranch,
   LayoutGrid,
   Settings,
+  Shirt,
   SlidersHorizontal,
   Ticket,
   Upload,
@@ -25,6 +27,7 @@ const SECTIONS = [
         icon: GitBranch,
         counter: "pending",
       },
+      { href: "/crm/planning", label: "Journées", icon: CalendarDays },
       { href: "/crm/passsport", label: "Pass'Sport", icon: Ticket },
       { href: "/crm/saison", label: "Début de saison", icon: Upload },
     ],
@@ -37,6 +40,7 @@ const SECTIONS = [
         label: "Grille tarifaire",
         icon: SlidersHorizontal,
       },
+      { href: "/crm/parametres/equipes", label: "Équipes", icon: Shirt },
       {
         href: "/crm/parametres/integrations",
         label: "Intégrations",
@@ -151,6 +155,9 @@ const PAGE_TITLES: [string, string][] = [
   ["/crm/licencies", "Licenciés"],
   ["/crm/reconciliation", "Réconciliation HelloAsso"],
   ["/crm/passsport", "Suivi Pass'Sport"],
+  ["/crm/planning/", "Journée à domicile"],
+  ["/crm/planning", "Journées à domicile"],
+  ["/crm/parametres/equipes", "Équipes"],
   ["/crm/parametres/tarifs", "Grille tarifaire"],
   ["/crm/parametres/integrations", "Intégrations"],
   ["/crm/saison", "Début de saison"],

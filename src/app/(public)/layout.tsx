@@ -37,6 +37,12 @@ export default function PublicLayout({
               Le club
             </Link>
             <Link
+              href="/matchs"
+              className="hidden rounded-lg px-3.5 py-[9px] text-[13.5px] font-semibold text-[#e7e1d7] transition-colors hover:bg-white/10 hover:text-white sm:block"
+            >
+              Matchs
+            </Link>
+            <Link
               href="/#infos"
               className="hidden rounded-lg px-3.5 py-[9px] text-[13.5px] font-semibold text-[#e7e1d7] transition-colors hover:bg-white/10 hover:text-white sm:block"
             >

@@ -24,7 +24,11 @@ import {
 import { LicenseeForm } from "@/components/crm/licensee-form";
 import { PaymentDialog } from "@/components/crm/payment-dialog";
 import { eur, formatDate } from "@/lib/format";
-import { getCurrentSeason, getSeasonTariffs } from "@/lib/queries";
+import {
+  getCurrentSeason,
+  getSeasonTariffs,
+  getSeasonTeams,
+} from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -54,7 +58,9 @@ export default async function LicenseePage({
   const [{ data: license }, season] = await Promise.all([
     supabase
       .from("licenses")
-      .select("*, member:members(*), tariff:tariff_grid(*)")
+      .select(
+        "*, member:members(*), tariff:tariff_grid(*), club_team:teams(id, name)"
+      )
       .eq("id", id)
       .maybeSingle(),
     getCurrentSeason(),
@@ -62,7 +68,7 @@ export default async function LicenseePage({
 
   if (!license || !season) notFound();
 
-  const [{ data: financials }, { data: payments }, tariffs] =
+  const [{ data: financials }, { data: payments }, tariffs, teams] =
     await Promise.all([
       supabase
         .from("license_financials")
@@ -75,6 +81,7 @@ export default async function LicenseePage({
         .eq("license_id", id)
         .order("paid_at", { ascending: false }),
       getSeasonTariffs(license.season_id),
+      getSeasonTeams(license.season_id),
     ]);
 
   const member = license.member;
@@ -103,6 +110,7 @@ export default async function LicenseePage({
         <LicenseeForm
           season={season}
           tariffs={tariffs}
+          teams={teams}
           member={member}
           license={license}
         />
@@ -146,7 +154,7 @@ export default async function LicenseePage({
                 </h2>
                 <div className="mt-1 text-[13.5px] text-muted-foreground">
                   {f?.category ?? "Catégorie non définie"}
-                  {license.team ? ` · ${license.team}` : ""}
+                  {license.club_team ? ` · ${license.club_team.name}` : ""}
                   {birthYear ? ` · né(e) en ${birthYear}` : ""}
                 </div>
                 <div className="mt-2.5 flex flex-wrap gap-1.5">

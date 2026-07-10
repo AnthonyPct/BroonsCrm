@@ -23,23 +23,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { saveLicensee } from "@/app/actions/licencies";
 import { eur, LICENSE_STATUS_LABELS, LICENSE_STATUSES } from "@/lib/format";
 import { computeDue, findTariffForBirthYear, type Tariff } from "@/lib/tariffs";
+import { findTeamFor, type Team } from "@/lib/planning";
 import type { Member, License, Season } from "@/lib/queries";
 
 export function LicenseeForm({
   season,
   tariffs,
+  teams,
   member,
   license,
 }: {
   season: Season;
   tariffs: Tariff[];
+  teams: Team[];
   member?: Member;
   license?: License;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [birthDate, setBirthDate] = useState(member?.birth_date ?? "");
+  const [sex, setSex] = useState(member?.sex ?? "");
   const [tariffChoice, setTariffChoice] = useState<string>(
     license?.tariff_id ?? "auto"
+  );
+  const [teamChoice, setTeamChoice] = useState<string>(
+    license ? (license.team_id ?? "none") : "auto"
   );
   const [registeredAt, setRegisteredAt] = useState(
     license?.registered_at ?? today
@@ -52,6 +59,16 @@ export function LicenseeForm({
         birthDate ? new Date(birthDate).getFullYear() : null
       ),
     [tariffs, birthDate]
+  );
+
+  const autoTeam = useMemo(
+    () =>
+      findTeamFor(
+        teams,
+        birthDate ? new Date(birthDate).getFullYear() : null,
+        sex || null
+      ),
+    [teams, birthDate, sex]
   );
 
   const effectiveTariff =
@@ -109,7 +126,7 @@ export function LicenseeForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="sex">Sexe</Label>
-            <Select name="sex" defaultValue={member?.sex ?? undefined}>
+            <Select name="sex" value={sex} onValueChange={setSex}>
               <SelectTrigger id="sex" className="w-full">
                 <SelectValue placeholder="—" />
               </SelectTrigger>
@@ -160,6 +177,35 @@ export function LicenseeForm({
             />
             <Label htmlFor="is_board">Membre du bureau</Label>
           </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Compétences (planning des matchs à domicile)</Label>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
+              <span className="flex items-center gap-2">
+                <Checkbox
+                  id="can_table"
+                  name="can_table"
+                  defaultChecked={member?.can_table ?? true}
+                />
+                <Label htmlFor="can_table">Table de marque</Label>
+              </span>
+              <span className="flex items-center gap-2">
+                <Checkbox
+                  id="can_referee"
+                  name="can_referee"
+                  defaultChecked={member?.can_referee ?? false}
+                />
+                <Label htmlFor="can_referee">Arbitre</Label>
+              </span>
+              <span className="flex items-center gap-2">
+                <Checkbox
+                  id="can_hall_manager"
+                  name="can_hall_manager"
+                  defaultChecked={member?.can_hall_manager ?? false}
+                />
+                <Label htmlFor="can_hall_manager">Responsable de salle</Label>
+              </span>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -206,8 +252,24 @@ export function LicenseeForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="team">Équipe</Label>
-            <Input id="team" name="team" defaultValue={license?.team ?? ""} />
+            <Label htmlFor="team_id">Équipe</Label>
+            <Select name="team_id" value={teamChoice} onValueChange={setTeamChoice}>
+              <SelectTrigger id="team_id" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">
+                  Automatique
+                  {autoTeam ? ` — ${autoTeam.name}` : " (naissance + sexe requis)"}
+                </SelectItem>
+                <SelectItem value="none">Sans équipe</SelectItem>
+                {teams.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Statut</Label>

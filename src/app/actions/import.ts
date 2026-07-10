@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { findTariffForBirthYear } from "@/lib/tariffs";
+import { findTeamFor } from "@/lib/planning";
 
 export type ImportRow = {
   first_name: string;
@@ -29,11 +30,12 @@ export async function importLicensees(
   let created = 0;
   let skipped = 0;
 
-  const [{ data: members }, { data: licenses }, { data: tariffs }] =
+  const [{ data: members }, { data: licenses }, { data: tariffs }, { data: teams }] =
     await Promise.all([
       supabase.from("members").select("id, first_name, last_name, birth_date"),
       supabase.from("licenses").select("member_id").eq("season_id", seasonId),
       supabase.from("tariff_grid").select("*").eq("season_id", seasonId),
+      supabase.from("teams").select("*").eq("season_id", seasonId),
     ]);
 
   const memberByKey = new Map(
@@ -81,11 +83,13 @@ export async function importLicensees(
           ? new Date(row.birth_date).getFullYear()
           : null;
       const tariff = findTariffForBirthYear(tariffs ?? [], birthYear);
+      const team = findTeamFor(teams ?? [], birthYear, row.sex);
 
       const { error } = await supabase.from("licenses").insert({
         member_id: member.id,
         season_id: seasonId,
         tariff_id: tariff?.id ?? null,
+        team_id: team?.id ?? null,
         status: "a_saisir",
       });
       if (error) throw new Error(error.message);
