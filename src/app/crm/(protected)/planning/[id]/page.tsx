@@ -9,30 +9,19 @@ import {
   type BoardMatch,
   type Option,
 } from "@/components/crm/matchday-board";
+import { MAX_KICKOFF, shortName, timeToMinutes } from "@/lib/planning";
 import {
-  isAdultAt,
-  matchWindow,
-  MAX_KICKOFF,
-  shortName,
-  timeToMinutes,
-  windowsOverlap,
-} from "@/lib/planning";
+  rankCandidates,
+  rankHallManagers,
+  type EquityCounts,
+  type PlanMatch,
+  type PlanMember,
+} from "@/lib/assignment";
 import { getCurrentSeason } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Journée à domicile",
-};
-
-type SeasonMember = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  birth_date: string | null;
-  can_table: boolean;
-  can_referee: boolean;
-  can_hall_manager: boolean;
-  team_id: string | null;
 };
 
 export default async function MatchdayPage({
@@ -81,72 +70,57 @@ export default async function MatchdayPage({
         .eq("season_id", season.id),
     ]);
 
-  const tableCounts = new Map<string, number>();
-  const refereeCounts = new Map<string, number>();
+  const counts: EquityCounts = {
+    table: new Map(),
+    referee: new Map(),
+    hall: new Map(),
+  };
   for (const a of seasonAssignments ?? []) {
     if (a.match?.matchday?.season_id !== season.id) continue;
-    const target = a.role === "referee" ? refereeCounts : tableCounts;
+    const target = a.role === "referee" ? counts.referee : counts.table;
     target.set(a.member_id, (target.get(a.member_id) ?? 0) + 1);
   }
-  const hallCounts = new Map<string, number>();
   for (const d of seasonDays ?? []) {
     if (d.hall_manager_id) {
-      hallCounts.set(
+      counts.hall.set(
         d.hall_manager_id,
-        (hallCounts.get(d.hall_manager_id) ?? 0) + 1
+        (counts.hall.get(d.hall_manager_id) ?? 0) + 1
       );
     }
   }
 
-  const members: SeasonMember[] = (licenses ?? [])
+  const members: PlanMember[] = (licenses ?? [])
     .filter((l) => l.member)
-    .map((l) => ({ ...(l.member as Omit<SeasonMember, "team_id">), team_id: l.team_id }));
-
-  // Fenêtres d'occupation de la journée (échauffement + match)
-  const windows = (matches ?? [])
-    .filter((m) => m.scheduled_at && m.team)
-    .map((m) => ({
-      matchId: m.id,
-      teamId: m.team_id,
-      window: matchWindow(m.scheduled_at!.slice(0, 5), m.team!),
-      assigned: (m.match_assignments ?? []).map((a) => a.member!.id),
+    .map((l) => ({
+      ...(l.member as Omit<PlanMember, "team_id">),
+      team_id: l.team_id,
     }));
 
-  function isBusy(member: SeasonMember, forMatchId: string): boolean {
-    const current = windows.find((w) => w.matchId === forMatchId);
-    if (!current) return false;
-    return windows.some(
-      (w) =>
-        w.matchId !== forMatchId &&
-        windowsOverlap(current.window, w.window) &&
-        (w.teamId === member.team_id || w.assigned.includes(member.id))
-    );
-  }
-
-  function suggest(
-    match: NonNullable<typeof matches>[number],
-    skill: "can_table" | "can_referee"
-  ): Option[] {
-    const counts = skill === "can_referee" ? refereeCounts : tableCounts;
-    return members
-      .filter((m) => m[skill])
-      .filter((m) => m.team_id !== match.team_id) // pas un joueur de l'équipe qui joue
-      .filter((m) => !isBusy(m, match.id))
-      .map((m) => ({
-        id: m.id,
-        label: shortName(m.first_name, m.last_name),
-        count: counts.get(m.id) ?? 0,
-      }))
-      .sort((a, b) => a.count - b.count || a.label.localeCompare(b.label, "fr"));
-  }
+  const planMatches: PlanMatch[] = (matches ?? [])
+    .filter((m) => m.team)
+    .map((m) => ({
+      id: m.id,
+      team_id: m.team_id,
+      team: m.team!,
+      scheduled_at: m.scheduled_at?.slice(0, 5) ?? null,
+      sort_order: m.sort_order,
+      assignments: Object.fromEntries(
+        (m.match_assignments ?? [])
+          .filter((a) => a.member)
+          .map((a) => [a.role, a.member!.id])
+      ),
+    }));
 
   const boardMatches: BoardMatch[] = (matches ?? []).map((m) => {
+    const planMatch = planMatches.find((pm) => pm.id === m.id)!;
     const assignments: BoardMatch["assignments"] = {};
     for (const a of m.match_assignments ?? []) {
       assignments[a.role] = a.member
         ? { id: a.member.id, label: shortName(a.member.first_name, a.member.last_name) }
         : null;
     }
+    const rank = (role: string): Option[] =>
+      rankCandidates(planMatch, role, members, planMatches, counts);
     return {
       id: m.id,
       teamName: m.team?.name ?? "?",
@@ -155,21 +129,14 @@ export default async function MatchdayPage({
       scheduledAt: m.scheduled_at?.slice(0, 5) ?? null,
       assignments,
       suggestions: {
-        table_1: suggest(m, "can_table"),
-        table_2: suggest(m, "can_table"),
-        ...(m.team?.is_youth ? { referee: suggest(m, "can_referee") } : {}),
+        table_1: rank("table_1"),
+        table_2: rank("table_2"),
+        ...(m.team?.is_youth ? { referee: rank("referee") } : {}),
       },
     };
   });
 
-  const hallOptions: Option[] = members
-    .filter((m) => m.can_hall_manager && isAdultAt(m.birth_date, matchday.date))
-    .map((m) => ({
-      id: m.id,
-      label: shortName(m.first_name, m.last_name),
-      count: hallCounts.get(m.id) ?? 0,
-    }))
-    .sort((a, b) => a.count - b.count || a.label.localeCompare(b.label, "fr"));
+  const hallOptions: Option[] = rankHallManagers(members, matchday.date, counts);
 
   const rawLabel = new Intl.DateTimeFormat("fr-FR", {
     weekday: "long",

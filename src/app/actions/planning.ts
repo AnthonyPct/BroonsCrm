@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { scheduleMatches } from "@/lib/planning";
+import {
+  buildAutoPlan,
+  type EquityCounts,
+  type PlanMatch,
+  type PlanMember,
+} from "@/lib/assignment";
 
 function revalidate(matchdayId?: string) {
   revalidatePath("/crm/planning");
@@ -191,6 +197,110 @@ export async function assignRole(
     if (error) throw new Error(error.message);
   }
   revalidate(matchdayId);
+}
+
+/**
+ * Assigne automatiquement les créneaux vides (tables, arbitres jeunes,
+ * responsable de salle) : préférence à ceux qui jouent le match d'avant ou
+ * d'après, puis équité par rôle. Les désignations déjà faites sont conservées.
+ */
+export async function autoAssign(matchdayId: string): Promise<number> {
+  const supabase = await createClient();
+
+  const [{ data: matchday }, { data: matches }, { data: licenses }] =
+    await Promise.all([
+      supabase.from("matchdays").select("*").eq("id", matchdayId).single(),
+      supabase
+        .from("matchday_matches")
+        .select("id, team_id, scheduled_at, sort_order, team:teams(*), match_assignments(role, member_id)")
+        .eq("matchday_id", matchdayId),
+      supabase
+        .from("licenses")
+        .select(
+          "team_id, season:seasons!inner(is_current), member:members(id, first_name, last_name, birth_date, can_table, can_referee, can_hall_manager)"
+        )
+        .eq("seasons.is_current", true),
+    ]);
+  if (!matchday || !matches) throw new Error("Journée introuvable");
+
+  const [{ data: seasonAssignments }, { data: seasonDays }] =
+    await Promise.all([
+      supabase
+        .from("match_assignments")
+        .select(
+          "role, member_id, match:matchday_matches!inner(matchday:matchdays!inner(season_id))"
+        ),
+      supabase
+        .from("matchdays")
+        .select("hall_manager_id")
+        .eq("season_id", matchday.season_id),
+    ]);
+
+  const counts: EquityCounts = {
+    table: new Map(),
+    referee: new Map(),
+    hall: new Map(),
+  };
+  for (const a of seasonAssignments ?? []) {
+    if (a.match?.matchday?.season_id !== matchday.season_id) continue;
+    const map = a.role === "referee" ? counts.referee : counts.table;
+    map.set(a.member_id, (map.get(a.member_id) ?? 0) + 1);
+  }
+  for (const d of seasonDays ?? []) {
+    if (d.hall_manager_id) {
+      counts.hall.set(
+        d.hall_manager_id,
+        (counts.hall.get(d.hall_manager_id) ?? 0) + 1
+      );
+    }
+  }
+
+  const planMatches: PlanMatch[] = matches
+    .filter((m) => m.team)
+    .map((m) => ({
+      id: m.id,
+      team_id: m.team_id,
+      team: m.team!,
+      scheduled_at: m.scheduled_at?.slice(0, 5) ?? null,
+      sort_order: m.sort_order,
+      assignments: Object.fromEntries(
+        (m.match_assignments ?? []).map((a) => [a.role, a.member_id])
+      ),
+    }));
+
+  const members: PlanMember[] = (licenses ?? [])
+    .filter((l) => l.member)
+    .map((l) => ({
+      ...(l.member as Omit<PlanMember, "team_id">),
+      team_id: l.team_id,
+    }));
+
+  const plan = buildAutoPlan(
+    planMatches,
+    members,
+    matchday.date,
+    matchday.hall_manager_id,
+    counts
+  );
+
+  for (const a of plan.assignments) {
+    const { error } = await supabase
+      .from("match_assignments")
+      .upsert(
+        { match_id: a.matchId, role: a.role, member_id: a.memberId },
+        { onConflict: "match_id,role" }
+      );
+    if (error) throw new Error(error.message);
+  }
+  if (plan.hallManagerId) {
+    await supabase
+      .from("matchdays")
+      .update({ hall_manager_id: plan.hallManagerId })
+      .eq("id", matchdayId);
+  }
+
+  revalidate(matchdayId);
+  return plan.assignments.length + (plan.hallManagerId ? 1 : 0);
 }
 
 export async function setHallManager(

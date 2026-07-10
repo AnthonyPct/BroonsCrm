@@ -7,6 +7,7 @@ import {
   ClipboardCopy,
   MessageCircle,
   Plus,
+  Sparkles,
   Trash2,
   Wand2,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import {
 import {
   addMatch,
   assignRole,
+  autoAssign,
   moveMatch,
   recalcSchedule,
   removeMatch,
@@ -30,7 +32,12 @@ import {
 } from "@/app/actions/planning";
 import { cn } from "@/lib/utils";
 
-export type Option = { id: string; label: string; count: number };
+export type Option = {
+  id: string;
+  label: string;
+  count: number;
+  adjacent?: boolean; // joue le match d'avant ou d'après
+};
 
 export type BoardMatch = {
   id: string;
@@ -104,6 +111,7 @@ function RoleSelect({
             <SelectItem key={o.id} value={o.id}>
               {o.label}
               {o.count >= 0 ? ` · ${o.count}` : ""}
+              {o.adjacent ? " · joue avant/après" : ""}
             </SelectItem>
           ))}
         </SelectContent>
@@ -183,6 +191,23 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
         >
           <Wand2 className="size-3.5" />
           Recalculer les horaires
+        </button>
+        <button
+          disabled={pending || data.matches.length === 0}
+          onClick={() =>
+            startTransition(async () => {
+              const n = await autoAssign(data.matchdayId);
+              toast.success(
+                n
+                  ? `${n} désignation(s) proposée(s) — vérifiez et ajustez si besoin`
+                  : "Rien à assigner : tous les créneaux sont déjà pourvus"
+              );
+            })
+          }
+          className="flex items-center gap-1.5 rounded-[9px] bg-primary px-3.5 py-2 text-[12.5px] font-bold text-white shadow-[0_2px_8px_rgba(216,30,52,.28)] transition-colors hover:bg-[#B0122A] disabled:opacity-50"
+        >
+          <Sparkles className="size-3.5" />
+          Assigner automatiquement
         </button>
         <button
           disabled={data.matches.length === 0}

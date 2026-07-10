@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  Check,
   CheckCircle2,
   ChevronLeft,
   Clock,
   Pencil,
+  X,
 } from "lucide-react";
 import {
   BoardBadge,
@@ -363,6 +365,55 @@ export default async function LicenseePage({
             <p className="mt-2.5 text-[11px] text-[#9C958D]">
               Bascule manuelle (MVP). L&apos;automatisation par email Gesthand
               est prévue en V2.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,.03)]">
+            <div className="micro-label">Compétences (planning de salle)</div>
+            <div className="mt-3 space-y-2">
+              {[
+                { label: "Table de marque", value: member.can_table },
+                { label: "Arbitre", value: member.can_referee },
+                {
+                  label: "Responsable de salle",
+                  value: member.can_hall_manager,
+                },
+              ].map((skill) => (
+                <div
+                  key={skill.label}
+                  className="flex items-center justify-between text-[13.5px]"
+                >
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      !skill.value && "text-muted-foreground"
+                    )}
+                  >
+                    {skill.label}
+                  </span>
+                  {skill.value ? (
+                    <span className="flex size-5 items-center justify-center rounded-full bg-success-bg">
+                      <Check className="size-3 text-success" strokeWidth={3} />
+                    </span>
+                  ) : (
+                    <span className="flex size-5 items-center justify-center rounded-full bg-muted">
+                      <X className="size-3 text-[#9C958D]" strokeWidth={3} />
+                    </span>
+                  )}
+                </div>
+              ))}
+              <div className="flex items-center justify-between border-t border-muted pt-2.5 text-[13.5px]">
+                <span className="font-semibold text-muted-foreground">
+                  Équipe
+                </span>
+                <span className="font-bold">
+                  {license.club_team?.name ?? "Sans équipe"}
+                </span>
+              </div>
+            </div>
+            <p className="mt-2.5 text-[11px] text-[#9C958D]">
+              Utilisées pour les suggestions de désignation des journées à
+              domicile — modifiables via « Modifier ».
             </p>
           </div>
 
