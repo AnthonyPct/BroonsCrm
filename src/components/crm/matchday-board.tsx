@@ -151,6 +151,7 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
       }
       lines.push(parts.join(" — "));
     }
+    lines.push("", "Merci d'arriver 15 minutes avant le match.");
     lines.push("", "Merci à tous ! 🔴⚫");
     return lines.join("\n");
   }
@@ -172,7 +173,7 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
     const W = 1080;
     const headerH = 340;
     const matchH = 170;
-    const footerH = 130;
+    const footerH = 190;
     const H = headerH + data.matches.length * matchH + footerH;
 
     const canvas = document.createElement("canvas");
@@ -282,6 +283,9 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
     });
 
     // pied
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `700 27px ${sans}`;
+    ctx.fillText("⏱ Merci d'arriver 15 minutes avant le match.", 60, H - 136);
     ctx.fillStyle = "#D81E34";
     ctx.beginPath();
     ctx.roundRect(60, H - 96, 420, 56, 999);
@@ -290,7 +294,7 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
     ctx.font = `700 26px ${sans}`;
     ctx.fillText("hbcpaysdebroons.fr", 100, H - 58);
     ctx.fillStyle = "#8a837a";
-    ctx.fillText("Entrée libre — venez nous encourager !", 520, H - 58);
+    ctx.fillText("Venez nous encourager !", 520, H - 58);
 
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
