@@ -2,6 +2,12 @@
 
 *Notes de brainstorm avec Anthony (10/07/2026). Rien ici n'est engagé — c'est le vivier.*
 
+## ✅ Livré (10/07/2026)
+
+- Encart séance d'essai gratuite (accueil)
+- FAQ licence (accordéon, 7 questions)
+- Suivi Pass'Sport complet : En attente du code → Code reçu → Déclaré à l'État → Remboursé, saisie du code a posteriori, KPIs + reste à récupérer
+
 ## 🎯 Chantier majeur : planning de salle & journées à domicile
 
 Automatiser l'organisation des matchs à domicile (aujourd'hui : conclusions de match à saisir dans Gesthand, ordre/horaires à décider, désignations à trouver).
@@ -36,8 +42,6 @@ Pas d'API officielle, mais les endpoints internes de ffhandball.fr sont accessib
 ## ⚡ Gains rapides site public
 
 - **Bandeau d'actus** géré depuis le CRM (table `announcements`).
-- **FAQ licence** (questions récurrentes du bureau).
-- Encart **séance d'essai gratuite** avec créneaux.
 - **OpenGraph** + image de partage, sitemap, favicon club.
 - Lien calendrier/résultats du club sur ffhandball.fr (en attendant les pages équipes).
 
@@ -47,7 +51,6 @@ Pas d'API officielle, mais les endpoints internes de ffhandball.fr sont accessib
 - **Relance impayés semi-auto** : bouton « Copier le mail de relance » pré-rempli (montant, échéances).
 - **Journal d'activité** (qui a saisi quoi — utile avec le compte partagé).
 - **Alerte tolérance** : licences « Payée » avec 1-10 € d'écart (compta fin de saison).
-- **Suivi Pass'Sport** : code reçu / déduit / remboursé par l'État.
 
 ## 🏗️ Structurants avant la saison prochaine
 
