@@ -2,23 +2,12 @@
 
 *Notes de brainstorm avec Anthony (10/07/2026). Rien ici n'est engagé — c'est le vivier.*
 
-## ✅ Livré (10/07/2026)
+## ✅ Livré
 
-- Encart séance d'essai gratuite (accueil)
-- FAQ licence (accordéon, 7 questions)
-- Suivi Pass'Sport complet : En attente du code → Code reçu → Déclaré à l'État → Remboursé, saisie du code a posteriori, KPIs + reste à récupérer
-
-## 🎯 Chantier majeur : planning de salle & journées à domicile
-
-Automatiser l'organisation des matchs à domicile (aujourd'hui : conclusions de match à saisir dans Gesthand, ordre/horaires à décider, désignations à trouver).
-
-- **Compétences licenciés** : cases `Arbitre`, `Table de marque`, `Responsable de salle` sur la fiche.
-- **Table `teams`** (SM1, SF1, U13M…) remplaçant le champ texte libre des licences.
-- **Journées à domicile** : date + salle → matchs (équipe, adversaire, horaire, ordre).
-- **Ordonnancement proposé** : jeunes tôt, séniors tard, créneaux configurables ; liste d'horaires prête à recopier dans Gesthand (conclusions).
-- **Désignations suggérées** : 2 tables + 1 arbitre par match, 1 responsable de salle par journée. Règles : compétence requise, pas de double affectation, ne joue pas en même temps, **équité** (compteur de corvées sur la saison).
-- **Sorties** : page publique « Matchs à domicile » + bouton **« Copier pour WhatsApp »** (message formaté prêt à coller). Plus tard : .ics, rappels automatiques.
-- Ordre de construction : socle manuel d'abord (fonctionne sans la fédé), sync FFHB ensuite.
+- Encart séance d'essai gratuite (accueil) *(10/07)*
+- FAQ licence (accordéon, 7 questions) *(10/07)*
+- Suivi Pass'Sport complet : statuts, code a posteriori, KPIs + reste à récupérer *(10/07)*
+- **Planning de salle & journées à domicile** *(11/07)* : équipes (durées, ordre, critères naissance+genre), compétences licenciés, affectation auto d'équipe, ordonnancement automatique (14h→13h, séniors ≥18h, max 21h15), désignations suggérées (compétence + dispo + équité par rôle), resp. de salle majeur/journée, conclusions Gesthand + export WhatsApp, page publique /matchs
 
 ## 🏆 Intégration FFHB (classements & calendriers)
 
@@ -31,7 +20,7 @@ Pas d'API officielle, mais les endpoints internes de ffhandball.fr sont accessib
 - ⚠️ Sens du flux : FFHB = *quels* matchs ; le CRM = *quels horaires* (jamais l'inverse).
 - Première étape le jour J : inspecter les appels réseau du site FFHB pour valider le format.
 
-## ✉️ Communication (dès que `teams` existe)
+## ✉️ Communication (`teams` existe désormais → débloqué)
 
 - **Copier les emails** d'une équipe / catégorie / **de n'importe quelle liste filtrée** (ex. impayés, non-qualifiés).
 - `mailto:` pré-rempli (Cci) — zéro infra.
