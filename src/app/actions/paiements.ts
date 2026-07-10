@@ -14,15 +14,18 @@ export async function addPayment(licenseId: string, formData: FormData) {
     throw new Error("Montant invalide");
   }
 
+  const source = String(formData.get("source")) as PaymentSource;
   const { error } = await supabase.from("payments").insert({
     license_id: licenseId,
-    source: String(formData.get("source")) as PaymentSource,
+    source,
     amount,
     paid_at:
       String(formData.get("paid_at") || "") ||
       new Date().toISOString().slice(0, 10),
     reference: String(formData.get("reference") ?? "") || null,
     notes: String(formData.get("notes") ?? "") || null,
+    // Pass'Sport : le code entre dans le cycle de suivi (reçu → déduit → remboursé)
+    aid_status: source === "passsport" ? "code_recu" : null,
   });
   if (error) throw new Error(error.message);
 
@@ -36,6 +39,19 @@ export async function addPayment(licenseId: string, formData: FormData) {
   revalidatePath(`/crm/licencies/${licenseId}`);
   revalidatePath("/crm/licencies");
   revalidatePath("/crm/dashboard");
+}
+
+export async function updateAidStatus(paymentId: string, status: string) {
+  if (!["code_recu", "deduit", "rembourse"].includes(status)) {
+    throw new Error("Statut invalide");
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("payments")
+    .update({ aid_status: status })
+    .eq("id", paymentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/crm/passsport");
 }
 
 export async function deletePayment(paymentId: string, licenseId: string) {

@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Settings,
   SlidersHorizontal,
+  Ticket,
   Upload,
   Users,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const SECTIONS = [
         icon: GitBranch,
         counter: "pending",
       },
+      { href: "/crm/passsport", label: "Pass'Sport", icon: Ticket },
       { href: "/crm/saison", label: "Début de saison", icon: Upload },
     ],
   },
@@ -148,6 +150,7 @@ const PAGE_TITLES: [string, string][] = [
   ["/crm/licencies/", "Fiche licencié"],
   ["/crm/licencies", "Licenciés"],
   ["/crm/reconciliation", "Réconciliation HelloAsso"],
+  ["/crm/passsport", "Suivi Pass'Sport"],
   ["/crm/parametres/tarifs", "Grille tarifaire"],
   ["/crm/parametres/integrations", "Intégrations"],
   ["/crm/saison", "Début de saison"],

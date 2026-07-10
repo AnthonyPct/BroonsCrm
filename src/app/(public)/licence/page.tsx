@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ExternalLink, Percent } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronLeft,
+  ExternalLink,
+  Percent,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Prendre sa licence",
@@ -60,6 +66,37 @@ const ETAPES: Etape[] = [
     texte:
       "Une fois le dossier complet et le paiement effectué, la Fédération qualifie la licence : le licencié peut jouer et s'entraîner officiellement. Le club vous tient informé.",
     last: true,
+  },
+];
+
+const FAQ: { q: string; a: string }[] = [
+  {
+    q: "Combien coûte la licence ?",
+    a: "Le tarif dépend de la catégorie (déterminée par l'année de naissance) : environ 157 € pour l'école de hand et les -11 ans, 175 € pour les 12-16 ans et 200 € pour les +16 ans. Et −5 % sur la part Ligue pour toute licence prise avant le 10 août !",
+  },
+  {
+    q: "Peut-on payer en plusieurs fois ?",
+    a: "Oui — le paiement en ligne sur HelloAsso propose le règlement en 3 fois sans frais, directement au moment de payer.",
+  },
+  {
+    q: "Comment utiliser le Pass'Sport, les chèques CAF ou ANCV ?",
+    a: "Indiquez votre réduction dans le formulaire Gesthand (étape 3) ou transmettez votre code Pass'Sport au bureau : la déduction est faite sur la cotisation. Les CAF Chèques Loisirs et les chèques vacances ANCV se remettent directement à un membre du bureau.",
+  },
+  {
+    q: "Le certificat médical est-il obligatoire ?",
+    a: "Pour un renouvellement, un simple questionnaire de santé suffit dans la plupart des cas. Pour une première licence (ou si le questionnaire l'exige), un certificat médical de moins de 6 mois est demandé — tout se dépose dans Gesthand.",
+  },
+  {
+    q: "Peut-on essayer avant de s'inscrire ?",
+    a: "Bien sûr ! La première séance d'essai est gratuite et sans engagement : venez avec vos baskets au créneau de votre catégorie (voir les horaires sur la page d'accueil).",
+  },
+  {
+    q: "Je viens d'un autre club : comment se passe la mutation ?",
+    a: "La mutation se fait via Gesthand entre les deux clubs. Contactez le bureau avant de lancer la démarche : on s'occupe du dossier avec vous (des frais de mutation fédéraux peuvent s'appliquer selon l'âge).",
+  },
+  {
+    q: "Quand puis-je commencer à jouer ?",
+    a: "Dès que la licence est qualifiée par la Fédération, c'est-à-dire une fois le dossier Gesthand complet et le paiement effectué. Le club vous tient informé — en attendant, l'entraînement d'essai reste possible.",
   },
 ];
 
@@ -164,6 +201,32 @@ export default function LicencePage() {
             </div>
           </div>
         ))}
+
+        {/* FAQ */}
+        <div className="pb-7 pt-4">
+          <h2 className="font-display text-[26px] font-extrabold tracking-[-.01em]">
+            Questions fréquentes
+          </h2>
+          <div className="mt-5 space-y-2.5">
+            {FAQ.map((item) => (
+              <details
+                key={item.q}
+                className="group rounded-2xl border bg-card shadow-[0_1px_3px_rgba(0,0,0,.04)]"
+              >
+                <summary className="flex cursor-pointer list-none items-center gap-3 px-[26px] py-[18px] font-display text-[15.5px] font-bold [&::-webkit-details-marker]:hidden">
+                  <ChevronDown
+                    className="size-[18px] shrink-0 text-primary transition-transform group-open:rotate-180"
+                    strokeWidth={2.4}
+                  />
+                  {item.q}
+                </summary>
+                <div className="px-[26px] pb-5 pl-[57px] text-[14.5px] leading-[1.65] text-muted-foreground">
+                  {item.a}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
 
         {/* closing CTA */}
         <div className="relative mt-2 overflow-hidden rounded-[18px] bg-[#17130F] px-[30px] py-[34px] text-center text-white">

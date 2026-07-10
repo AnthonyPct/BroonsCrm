@@ -254,6 +254,7 @@ export type Database = {
       }
       payments: {
         Row: {
+          aid_status: string | null
           amount: number
           created_at: string
           helloasso_payment_id: string | null
@@ -265,6 +266,7 @@ export type Database = {
           source: Database["public"]["Enums"]["payment_source"]
         }
         Insert: {
+          aid_status?: string | null
           amount: number
           created_at?: string
           helloasso_payment_id?: string | null
@@ -276,6 +278,7 @@ export type Database = {
           source: Database["public"]["Enums"]["payment_source"]
         }
         Update: {
+          aid_status?: string | null
           amount?: number
           created_at?: string
           helloasso_payment_id?: string | null

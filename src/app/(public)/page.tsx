@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
+import { ArrowRight, Mail, MapPin, Phone, Sparkles } from "lucide-react";
 
 const HORAIRES = [
   {
@@ -181,6 +181,39 @@ export default function HomePage() {
               Équipes masculines et féminines engagées en compétition, dans une
               ambiance d&apos;équipe conviviale.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SÉANCE D'ESSAI */}
+      <section className="mx-auto w-full max-w-[1160px] px-7 pt-[52px]">
+        <div className="flex flex-wrap items-center gap-6 rounded-[18px] border border-[#cfe8d9] bg-gradient-to-br from-success-bg to-[#f0f8f2] px-7 py-7 sm:px-9">
+          <div className="flex size-[52px] flex-none items-center justify-center rounded-[14px] bg-success">
+            <Sparkles className="size-6 text-white" strokeWidth={2.2} />
+          </div>
+          <div className="min-w-[260px] flex-1">
+            <h2 className="font-display text-2xl font-extrabold tracking-[-.01em] text-success-strong">
+              Viens essayer gratuitement !
+            </h2>
+            <p className="mt-1.5 max-w-[560px] text-[14.5px] leading-relaxed text-success">
+              La première séance est offerte, sans engagement. Il suffit de
+              venir avec tes baskets au créneau de ta catégorie — on
+              s&apos;occupe du reste.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            <Link
+              href="#infos"
+              className="rounded-[10px] bg-success px-5 py-3 text-[13.5px] font-bold text-white transition-colors hover:bg-success-strong"
+            >
+              Voir les créneaux
+            </Link>
+            <Link
+              href="#contact"
+              className="rounded-[10px] border border-[#cfe8d9] bg-white px-5 py-3 text-[13.5px] font-bold text-success-strong transition-colors hover:bg-[#f0f8f2]"
+            >
+              Nous contacter
+            </Link>
           </div>
         </div>
       </section>
