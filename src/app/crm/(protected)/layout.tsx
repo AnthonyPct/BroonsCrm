@@ -45,7 +45,7 @@ export default async function CrmLayout({
               HBC Pays de Broons
             </span>
             <span className="block text-[11px] font-medium text-[#9C958D]">
-              Gestion des licences
+              Gestion
             </span>
           </span>
         </Link>

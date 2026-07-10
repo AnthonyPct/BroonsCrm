@@ -172,14 +172,14 @@ export default function HomePage() {
               SM<span className="text-[#ff4258]">SF</span>
             </div>
             <h3 className="mt-[18px] font-display text-[21px] font-extrabold">
-              Séniors &amp; loisir
+              Séniors
             </h3>
             <div className="mt-[5px] text-[12.5px] font-bold text-[#17130F]">
               2010 et avant
             </div>
             <p className="mt-3.5 text-sm leading-relaxed text-muted-foreground">
-              Équipes masculines et féminines en compétition, plus une section
-              loisir pour jouer sans pression.
+              Équipes masculines et féminines engagées en compétition, dans une
+              ambiance d&apos;équipe conviviale.
             </p>
           </div>
         </div>

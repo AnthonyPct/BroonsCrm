@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, ExternalLink, Percent } from "lucide-react";
+import { ArrowRight, ChevronLeft, ExternalLink, Percent } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Prendre sa licence",
@@ -11,23 +11,23 @@ type Etape = {
   titre: string;
   texte: string;
   chips?: string[];
-  link?: { href: string; label: string };
+  link?: { href: string; label: string; external?: boolean };
   last?: boolean;
 };
 
 const ETAPES: Etape[] = [
   {
     num: 1,
-    titre: "Faire sa demande sur Gesthand",
+    titre: "Vérifiez vos mails !",
     texte:
-      "La demande de licence se crée sur Gesthand, la plateforme officielle de la Fédération. Vous recevez un lien par email : renseignez l'identité du licencié et suivez les instructions.",
-    link: { href: "https://gesthand.net", label: "Aller sur Gesthand" },
+      "Vous avez normalement reçu un mail de la part de Gesthand pour refaire votre licence. Si ce n'est pas le cas, ou si le lien a expiré, contactez-nous !",
+    link: { href: "/#contact", label: "Contactez-nous" },
   },
   {
     num: 2,
-    titre: "Fournir les pièces demandées",
+    titre: "Complétez le formulaire Gesthand",
     texte:
-      "Tout se dépose directement dans Gesthand, qui reste la référence pour la conformité du dossier. Prévoyez :",
+      "Cliquez sur le lien Gesthand reçu par mail, puis complétez le formulaire en étant attentif à chaque champ. Les pièces se déposent directement dans Gesthand, qui reste la référence pour la conformité du dossier. Prévoyez :",
     chips: [
       "Photo d'identité",
       "Certificat médical ou questionnaire de santé",
@@ -37,29 +37,28 @@ const ETAPES: Etape[] = [
   },
   {
     num: 3,
-    titre: "Régler la licence sur HelloAsso",
+    titre: "Mode de paiement & attestation d'honorabilité",
     texte:
-      "Le paiement se fait en ligne via HelloAsso — un lien vous est communiqué. Le règlement en plusieurs fois est possible directement sur la plateforme.",
-    link: { href: "https://helloasso.com", label: "Payer sur HelloAsso" },
-  },
-  {
-    num: 4,
-    titre: "Aides & moyens de paiement acceptés",
-    texte:
-      "Le club accepte de nombreux dispositifs pour alléger le coût de la licence. Parlez-en au bureau, on s'occupe de tout enregistrer.",
+      "Dans le formulaire, choisissez votre mode de paiement et indiquez vos réductions si vous y avez droit (Pass'Sport, CAF, ANCV…). Signez, et remplissez l'attestation d'honorabilité — elle est indispensable pour valider le dossier.",
     chips: [
       "Pass'Sport",
-      "ANCV Coupon Sport",
       "CAF Chèque Loisirs",
+      "ANCV Coupon Sport",
       "Chèque",
       "Espèces",
     ],
   },
   {
+    num: 4,
+    titre: "Payez votre licence sur HelloAsso",
+    texte:
+      "Une fois la licence validée sur Gesthand, vous recevrez un mail pour la payer en ligne sur HelloAsso (règlement en plusieurs fois possible). Attention : la licence n'est valable qu'après le paiement.",
+  },
+  {
     num: 5,
     titre: "Validation & qualification",
     texte:
-      "Une fois le dossier complet et validé par la Fédération, la licence est qualifiée : le licencié peut jouer et s'entraîner officiellement. Le club vous tient informé.",
+      "Une fois le dossier complet et le paiement effectué, la Fédération qualifie la licence : le licencié peut jouer et s'entraîner officiellement. Le club vous tient informé.",
     last: true,
   },
 ];
@@ -147,15 +146,20 @@ export default function LicencePage() {
                 </div>
               )}
               {e.link && (
-                <a
+                <Link
                   href={e.link.href}
-                  target="_blank"
-                  rel="noreferrer"
+                  {...(e.link.href.startsWith("http")
+                    ? { target: "_blank", rel: "noreferrer" }
+                    : {})}
                   className="mt-4 inline-flex items-center gap-[7px] rounded-[10px] bg-[#17130F] px-[17px] py-[11px] text-[13px] font-bold text-white transition-colors hover:bg-[#2a211a]"
                 >
                   {e.link.label}
-                  <ExternalLink className="size-[15px]" strokeWidth={2.3} />
-                </a>
+                  {e.link.href.startsWith("http") ? (
+                    <ExternalLink className="size-[15px]" strokeWidth={2.3} />
+                  ) : (
+                    <ArrowRight className="size-[15px]" strokeWidth={2.3} />
+                  )}
+                </Link>
               )}
             </div>
           </div>
