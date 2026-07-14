@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 const SECTIONS = [
   {
-    label: "Pilotage",
+    label: "Licences",
     links: [
       { href: "/crm/dashboard", label: "Tableau de bord", icon: LayoutGrid },
       { href: "/crm/licencies", label: "Licenciés", icon: Users, counter: "licensees" },
@@ -27,9 +27,13 @@ const SECTIONS = [
         icon: GitBranch,
         counter: "pending",
       },
-      { href: "/crm/planning", label: "Journées", icon: CalendarDays },
       { href: "/crm/passsport", label: "Pass'Sport", icon: Ticket },
-      { href: "/crm/saison", label: "Début de saison", icon: Upload },
+    ],
+  },
+  {
+    label: "Matchs",
+    links: [
+      { href: "/crm/planning", label: "Journées à domicile", icon: CalendarDays },
     ],
   },
   {
@@ -41,6 +45,7 @@ const SECTIONS = [
         icon: SlidersHorizontal,
       },
       { href: "/crm/parametres/equipes", label: "Équipes", icon: Shirt },
+      { href: "/crm/saison", label: "Début de saison", icon: Upload },
       {
         href: "/crm/parametres/integrations",
         label: "Intégrations",

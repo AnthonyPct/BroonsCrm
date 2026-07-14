@@ -2,30 +2,49 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Mail, MapPin, Phone, Sparkles } from "lucide-react";
 
-const HORAIRES = [
+const TAG_ECOLE = "bg-warning-bg text-warning-icon";
+const TAG_JEUNES = "bg-accent text-primary";
+const TAG_SENIORS = "bg-[#17130F] text-white";
+const TAG_LOISIRS = "bg-success-bg text-success";
+
+const HORAIRES: {
+  jour: string;
+  creneaux: { cat: string; heure: string; tag: string }[];
+}[] = [
   {
-    cat: "École",
-    jours: "Mercredi",
-    heure: "14h00 – 15h30",
-    tag: "bg-warning-bg text-warning-icon",
+    jour: "Lundi",
+    creneaux: [{ cat: "Loisirs", heure: "19h00 – 20h30", tag: TAG_LOISIRS }],
   },
   {
-    cat: "U11 · U13",
-    jours: "Mercredi & vendredi",
-    heure: "15h30 – 17h00",
-    tag: "bg-accent text-primary",
+    jour: "Mardi",
+    creneaux: [
+      { cat: "U15 M", heure: "17h30 – 19h00", tag: TAG_JEUNES },
+      { cat: "Séniors F", heure: "19h45 – 21h15", tag: TAG_SENIORS },
+    ],
   },
   {
-    cat: "U15 · U18",
-    jours: "Mardi & jeudi",
-    heure: "18h30 – 20h00",
-    tag: "bg-accent text-primary",
+    jour: "Mercredi",
+    creneaux: [
+      { cat: "U11", heure: "15h00 – 16h30", tag: TAG_JEUNES },
+      { cat: "U13 M", heure: "16h30 – 18h00", tag: TAG_JEUNES },
+      { cat: "U18 F", heure: "18h15 – 19h45", tag: TAG_JEUNES },
+      { cat: "U18 M · SM", heure: "19h45 – 21h15", tag: TAG_SENIORS },
+    ],
   },
   {
-    cat: "Séniors",
-    jours: "Mardi & jeudi",
-    heure: "20h00 – 22h00",
-    tag: "bg-[#17130F] text-white",
+    jour: "Vendredi",
+    creneaux: [
+      { cat: "U13 M · U15 M", heure: "17h30 – 19h00", tag: TAG_JEUNES },
+      { cat: "U18 F · SF", heure: "19h00 – 20h30", tag: TAG_JEUNES },
+      { cat: "U18 M · SM", heure: "20h30 – 22h00", tag: TAG_SENIORS },
+    ],
+  },
+  {
+    jour: "Samedi",
+    creneaux: [
+      { cat: "École de hand", heure: "11h00 – 12h15", tag: TAG_ECOLE },
+      { cat: "Compétitions", heure: "après-midi & soir", tag: TAG_SENIORS },
+    ],
   },
 ];
 
@@ -231,28 +250,35 @@ export default function HomePage() {
             <h2 className="mt-2 font-display text-[26px] font-extrabold">
               Créneaux de la semaine
             </h2>
-            <div className="mt-[22px] flex flex-col">
+            <div className="mt-[22px] flex flex-col gap-1">
               {HORAIRES.map((h) => (
                 <div
-                  key={h.cat}
-                  className="flex items-center gap-4 border-b border-muted py-3.5"
+                  key={h.jour}
+                  className="flex flex-col gap-1.5 border-b border-muted py-3 sm:flex-row sm:gap-4"
                 >
-                  <span
-                    className={`min-w-[82px] flex-none rounded-lg px-2.5 py-1.5 text-center text-[11.5px] font-extrabold ${h.tag}`}
-                  >
-                    {h.cat}
+                  <span className="w-24 flex-none pt-1 text-[12.5px] font-extrabold uppercase tracking-[.05em] text-[#9C958D]">
+                    {h.jour}
                   </span>
-                  <span className="flex-1 text-sm font-semibold text-[#3d3a35]">
-                    {h.jours}
-                  </span>
-                  <span className="text-sm font-bold tabular-nums">
-                    {h.heure}
-                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    {h.creneaux.map((c) => (
+                      <div key={c.cat} className="flex items-center gap-3">
+                        <span
+                          className={`min-w-[96px] flex-none rounded-lg px-2.5 py-1 text-center text-[11.5px] font-extrabold ${c.tag}`}
+                        >
+                          {c.cat}
+                        </span>
+                        <span className="text-sm font-bold tabular-nums">
+                          {c.heure}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
             <div className="mt-4 text-xs italic text-[#9C958D]">
-              Créneaux indicatifs — à confirmer chaque saison.
+              Prévisionnel saison 2026-2027 — salles du Chalet et Jean Monnet
+              (Broons) et Montauban-de-Bretagne selon les créneaux.
             </div>
           </div>
           <div className="relative overflow-hidden rounded-[18px] bg-gradient-to-br from-[#D81E34] to-[#8f0f20] p-[30px] text-white">
