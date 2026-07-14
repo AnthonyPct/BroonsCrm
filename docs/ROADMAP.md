@@ -46,4 +46,4 @@ Pas d'API officielle, mais les endpoints internes de ffhandball.fr sont accessib
 - **Bascule de saison** : bouton « Ouvrir la saison suivante » (archive, duplique la grille, prépare les renouvellements).
 - **Rapport financier imprimable** pour l'AG (dû ligue, encaissé par moyen, restes).
 - **Comptes nominatifs** (2-3 utilisateurs au lieu du compte partagé) — rend le journal d'activité pertinent.
-- **V2 email Gesthand** : qualification auto si règle de transfert des mails `[FFHandball]` obtenue (cf. brief §4.6).
+- **V2 email Gesthand** : ❌ **testé le 14/07/2026 — bloqué.** La règle de transfert Outlook fonctionne, mais le serveur rejette l'envoi externe (`550 5.7.520 Your organization does not allow external forwarding`). La boîte club vit dans le tenant Microsoft de la FFHB nationale (`ffhandball.onmicrosoft.com`, adresse canonique `5322002@ffhandball.net`) : ni transfert externe, ni IMAP/Graph sans leur admin. Seule voie restante : ticket à l'assistance FFHB (peu probable). Fallback retenu : bascule manuelle, à améliorer avec une **qualification en masse** depuis la liste des licenciés.
