@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { BadgeCheck, Plus, Search } from "lucide-react";
+import { toast } from "sonner";
+import { bulkQualify } from "@/app/actions/licencies";
 import {
   Select,
   SelectContent,
@@ -57,6 +59,30 @@ export function LicenseesView({
   const [payment, setPayment] = useState("all");
   const [qualif, setQualif] = useState("all");
   const [view, setView] = useState<(typeof VIEWS)[number]>("Tableau");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [pending, startTransition] = useTransition();
+
+  function toggleSelected(id: string) {
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function applyBulkQualify(qualified: boolean) {
+    const ids = [...selected];
+    startTransition(async () => {
+      await bulkQualify(ids, qualified);
+      setSelected(new Set());
+      toast.success(
+        qualified
+          ? `${ids.length} licence(s) marquée(s) qualifiée(s)`
+          : `Qualification retirée sur ${ids.length} licence(s)`
+      );
+    });
+  }
 
   const filtered = useMemo(() => {
     const q = normalize(search);
@@ -153,14 +179,49 @@ export function LicenseesView({
         </div>
       </div>
 
-      <div className="text-[12.5px] font-semibold text-[#9C958D]">
-        {filtered.length} licencié(s) affiché(s)
+      <div className="flex min-h-8 flex-wrap items-center gap-3">
+        <span className="text-[12.5px] font-semibold text-[#9C958D]">
+          {filtered.length} licencié(s) affiché(s)
+          {selected.size > 0 && ` · ${selected.size} sélectionné(s)`}
+        </span>
+        {selected.size > 0 && (
+          <>
+            <button
+              disabled={pending}
+              onClick={() => applyBulkQualify(true)}
+              className="flex items-center gap-1.5 rounded-[9px] bg-success px-3 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-success-strong disabled:opacity-50"
+            >
+              <BadgeCheck className="size-3.5" />
+              Marquer qualifiées ({selected.size})
+            </button>
+            <button
+              disabled={pending}
+              onClick={() => applyBulkQualify(false)}
+              className="rounded-[9px] border bg-card px-3 py-1.5 text-[12px] font-bold text-muted-foreground transition-colors hover:border-[#9C958D] disabled:opacity-50"
+            >
+              Retirer la qualification
+            </button>
+          </>
+        )}
       </div>
 
       {/* ------- TABLEAU ------- */}
       {view === "Tableau" && (
         <div className="overflow-x-auto rounded-[14px] border bg-card">
-          <div className="grid min-w-[820px] grid-cols-[2.2fr_1.2fr_1fr_1fr_1.1fr_1.3fr] border-b bg-secondary px-5 py-3">
+          <div className="grid min-w-[820px] grid-cols-[36px_2.2fr_1.2fr_1fr_1fr_1.1fr_1.3fr] items-center border-b bg-secondary px-5 py-3">
+            <input
+              type="checkbox"
+              title="Tout sélectionner"
+              className="size-4 accent-[#D81E34]"
+              checked={filtered.length > 0 && selected.size === filtered.length}
+              onChange={(e) =>
+                setSelected(
+                  e.target.checked
+                    ? new Set(filtered.map((l) => l.id))
+                    : new Set()
+                )
+              }
+            />
             {["Licencié", "Équipe", "Dû", "Reste", "Paiement", "Qualification"].map(
               (h) => (
                 <div
@@ -184,11 +245,23 @@ export function LicenseesView({
               ? new Date(l.member.birth_date).getFullYear()
               : null;
             return (
-              <button
+              <div
                 key={l.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => router.push(`/crm/licencies/${l.id}`)}
-                className="grid w-full min-w-[820px] grid-cols-[2.2fr_1.2fr_1fr_1fr_1.1fr_1.3fr] items-center border-b border-muted px-5 py-[13px] text-left text-[13.5px] transition-colors last:border-b-0 hover:bg-[#FBFAF7]"
+                onKeyDown={(e) =>
+                  e.key === "Enter" && router.push(`/crm/licencies/${l.id}`)
+                }
+                className="grid w-full min-w-[820px] cursor-pointer grid-cols-[36px_2.2fr_1.2fr_1fr_1fr_1.1fr_1.3fr] items-center border-b border-muted px-5 py-[13px] text-left text-[13.5px] transition-colors last:border-b-0 hover:bg-[#FBFAF7]"
               >
+                <input
+                  type="checkbox"
+                  className="size-4 accent-[#D81E34]"
+                  checked={selected.has(l.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => toggleSelected(l.id)}
+                />
                 <div className="flex items-center gap-3">
                   <MemberAvatar
                     firstName={l.member.first_name}
@@ -228,7 +301,7 @@ export function LicenseesView({
                 <div>
                   <QualificationBadge qualified={l.status === "qualifiee"} />
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

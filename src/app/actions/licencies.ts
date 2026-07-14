@@ -161,6 +161,26 @@ export async function toggleQualification(licenseId: string, qualified: boolean)
   revalidatePath("/crm/dashboard");
 }
 
+/** Qualification en masse depuis la liste (fallback du blocage email FFHB). */
+export async function bulkQualify(licenseIds: string[], qualified: boolean) {
+  if (!licenseIds.length) return;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("licenses")
+    .update(
+      qualified
+        ? {
+            status: "qualifiee",
+            qualified_at: new Date().toISOString().slice(0, 10),
+          }
+        : { status: "attente_paiement", qualified_at: null }
+    )
+    .in("id", licenseIds);
+  if (error) throw new Error(error.message);
+  revalidatePath("/crm/licencies");
+  revalidatePath("/crm/dashboard");
+}
+
 export async function saveLicenseNotes(licenseId: string, notes: string) {
   const supabase = await createClient();
   const { error } = await supabase
