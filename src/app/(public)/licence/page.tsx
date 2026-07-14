@@ -36,7 +36,7 @@ const ETAPES: Etape[] = [
     num: 2,
     titre: "Complétez le formulaire Gesthand",
     texte:
-      "Cliquez sur le lien Gesthand reçu par mail, puis complétez le formulaire en étant attentif à chaque champ. Les pièces se déposent directement dans Gesthand, qui reste la référence pour la conformité du dossier. Prévoyez :",
+      "Cliquez sur le lien Gesthand reçu par mail, puis complétez le formulaire en étant attentif à chaque champ. Le parcours se déroule en 7 étapes : Identité → Adresse et contact → Licence → Justificatifs → Avantage licencié → Validation → Signature. Les pièces se déposent directement dans Gesthand. Prévoyez :",
     chips: [
       "Photo d'identité",
       "Certificat médical ou questionnaire de santé",
@@ -61,7 +61,7 @@ const ETAPES: Etape[] = [
     num: 4,
     titre: "Payez votre licence sur HelloAsso",
     texte:
-      "Une fois la licence validée sur Gesthand, vous recevrez un mail pour la payer en ligne sur HelloAsso (règlement en plusieurs fois possible). Attention : la licence n'est valable qu'après le paiement.",
+      "Après votre signature sur Gesthand, le club valide votre dossier de son côté — c'est cette validation qui déclenche l'envoi du mail de paiement HelloAsso. Un délai de quelques jours entre votre validation et la réception du mail est donc normal. Le règlement en plusieurs fois est possible. Attention : la licence n'est valable qu'après le paiement.",
   },
   {
     num: 5,
@@ -82,6 +82,10 @@ const FAQ: { q: string; a: string }[] = [
     a: "Oui — le paiement en ligne sur HelloAsso propose le règlement en 3 fois sans frais, directement au moment de payer.",
   },
   {
+    q: "J'ai validé mon dossier Gesthand mais je n'ai pas reçu le mail de paiement ?",
+    a: "C'est normal : après votre signature, le club doit valider votre dossier de son côté avant que le mail de paiement HelloAsso ne parte. Comptez quelques jours. Au-delà d'une semaine, pensez à vérifier vos spams puis contactez-nous.",
+  },
+  {
     q: "Comment utiliser le Pass'Sport, les chèques CAF ou ANCV ?",
     a: "Indiquez votre réduction dans le formulaire Gesthand (étape 3) ou transmettez votre code Pass'Sport au bureau : la déduction est faite sur la cotisation. Les CAF Chèques Loisirs et les chèques vacances ANCV se remettent directement à un membre du bureau.",
   },
@@ -91,7 +95,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Peut-on essayer avant de s'inscrire ?",
-    a: "Bien sûr ! La première séance d'essai est gratuite et sans engagement : venez avec vos baskets au créneau de votre catégorie (voir les horaires sur la page d'accueil).",
+    a: "Bien sûr ! Les séances d'essai sont gratuites et sans engagement : venez avec vos baskets au créneau de votre catégorie (voir les horaires sur la page d'accueil).",
   },
   {
     q: "Je viens d'un autre club : comment se passe la mutation ?",

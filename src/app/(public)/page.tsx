@@ -215,8 +215,8 @@ export default function HomePage() {
               Viens essayer gratuitement !
             </h2>
             <p className="mt-1.5 max-w-[560px] text-[14.5px] leading-relaxed text-success">
-              La première séance est offerte, sans engagement. Il suffit de
-              venir avec tes baskets au créneau de ta catégorie — on
+              Les séances d&apos;essai sont gratuites et sans engagement. Il
+              suffit de venir avec tes baskets au créneau de ta catégorie — on
               s&apos;occupe du reste.
             </p>
           </div>
