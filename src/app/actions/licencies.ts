@@ -191,6 +191,41 @@ export async function saveLicenseNotes(licenseId: string, notes: string) {
   revalidatePath(`/crm/licencies/${licenseId}`);
 }
 
+/** Suppression en masse depuis la liste (mêmes règles que la fiche). */
+export async function bulkDeleteLicensees(licenseIds: string[]) {
+  if (!licenseIds.length) return;
+  const supabase = await createClient();
+
+  const { data: licenses, error: fetchError } = await supabase
+    .from("licenses")
+    .select("id, member_id")
+    .in("id", licenseIds);
+  if (fetchError) throw new Error(fetchError.message);
+
+  const { error } = await supabase
+    .from("licenses")
+    .delete()
+    .in("id", licenseIds);
+  if (error) throw new Error(error.message);
+
+  // Supprime les membres qui n'ont plus aucune licence (autre saison)
+  const memberIds = [...new Set((licenses ?? []).map((l) => l.member_id))];
+  if (memberIds.length) {
+    const { data: remaining } = await supabase
+      .from("licenses")
+      .select("member_id")
+      .in("member_id", memberIds);
+    const stillLicensed = new Set((remaining ?? []).map((l) => l.member_id));
+    const orphans = memberIds.filter((id) => !stillLicensed.has(id));
+    if (orphans.length) {
+      await supabase.from("members").delete().in("id", orphans);
+    }
+  }
+
+  revalidatePath("/crm/licencies");
+  revalidatePath("/crm/dashboard");
+}
+
 export async function deleteLicensee(licenseId: string, memberId: string) {
   const supabase = await createClient();
   await supabase.from("licenses").delete().eq("id", licenseId);

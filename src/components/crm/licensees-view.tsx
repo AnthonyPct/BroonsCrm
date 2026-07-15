@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, Plus, Search } from "lucide-react";
+import { BadgeCheck, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { bulkQualify } from "@/app/actions/licencies";
+import { bulkDeleteLicensees, bulkQualify } from "@/app/actions/licencies";
 import {
   Select,
   SelectContent,
@@ -81,6 +81,21 @@ export function LicenseesView({
           ? `${ids.length} licence(s) marquée(s) qualifiée(s)`
           : `Qualification retirée sur ${ids.length} licence(s)`
       );
+    });
+  }
+
+  function applyBulkDelete() {
+    const ids = [...selected];
+    if (
+      !confirm(
+        `Supprimer ${ids.length} licence(s) (et les licenciés sans autre licence) ? Les paiements associés seront supprimés.`
+      )
+    )
+      return;
+    startTransition(async () => {
+      await bulkDeleteLicensees(ids);
+      setSelected(new Set());
+      toast.success(`${ids.length} licencié(s) supprimé(s)`);
     });
   }
 
@@ -200,6 +215,14 @@ export function LicenseesView({
               className="rounded-[9px] border bg-card px-3 py-1.5 text-[12px] font-bold text-muted-foreground transition-colors hover:border-[#9C958D] disabled:opacity-50"
             >
               Retirer la qualification
+            </button>
+            <button
+              disabled={pending}
+              onClick={applyBulkDelete}
+              className="flex items-center gap-1.5 rounded-[9px] border border-[#f3ccd0] bg-accent px-3 py-1.5 text-[12px] font-bold text-destructive transition-colors hover:bg-[#f6d7da] disabled:opacity-50"
+            >
+              <Trash2 className="size-3.5" />
+              Supprimer ({selected.size})
             </button>
           </>
         )}
