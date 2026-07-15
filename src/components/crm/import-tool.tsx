@@ -34,6 +34,7 @@ const HEADER_MAP: Record<string, keyof ImportRow> = {
   datedenaissance: "birth_date",
   datenaissance: "birth_date",
   nele: "birth_date",
+  neele: "birth_date", // « Né(e) le » de l'export Gesthand : le (e) laisse un e
   birthdate: "birth_date",
   ddn: "birth_date",
   email: "email",
