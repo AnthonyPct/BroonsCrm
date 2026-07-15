@@ -46,10 +46,16 @@ export default async function DashboardPage() {
   const total = withTariff.length || 1;
   const pct = Math.round((settled / total) * 100);
 
-  const totalPaid = withTariff.reduce(
-    (sum, l) => sum + Number(l.financials!.total_paid ?? 0),
+  const totalOffered = withTariff.reduce(
+    (sum, l) => sum + Number(l.financials!.total_offered ?? 0),
     0
   );
+  // Les licences offertes soldent la licence mais ne sont pas de l'argent encaissé
+  const totalPaid =
+    withTariff.reduce(
+      (sum, l) => sum + Number(l.financials!.total_paid ?? 0),
+      0
+    ) - totalOffered;
   const toCollect = withTariff.reduce((sum, l) => {
     const b = Number(l.financials!.balance ?? 0);
     return sum + (b > 0 ? b : 0);
@@ -103,7 +109,10 @@ export default async function DashboardPage() {
     {
       label: "Déjà encaissé",
       value: eur.format(totalPaid),
-      hint: "tous moyens de paiement confondus",
+      hint:
+        totalOffered > 0
+          ? `hors ${eur.format(totalOffered)} de licences offertes`
+          : "tous moyens de paiement confondus",
     },
     {
       label: "Reste à récupérer",

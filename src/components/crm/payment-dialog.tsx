@@ -68,7 +68,13 @@ export function PaymentDialog({
                 <button
                   type="button"
                   key={s}
-                  onClick={() => setSource(s)}
+                  onClick={() => {
+                    setSource(s);
+                    // Offert = on solde le reste à charge, pas besoin de le saisir
+                    if (s === "offert" && balance > 0) {
+                      setAmount(balance.toFixed(2));
+                    }
+                  }}
                   className={cn(
                     "rounded-[10px] border-[1.5px] px-2 py-[11px] text-[12.5px] font-bold transition-colors",
                     source === s

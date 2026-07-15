@@ -613,6 +613,7 @@ export type Database = {
           payment_status: string | null
           season_id: string | null
           total_due: number | null
+          total_offered: number | null
           total_paid: number | null
         }
         Relationships: [
