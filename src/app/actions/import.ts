@@ -11,6 +11,8 @@ export type ImportRow = {
   birth_date: string | null; // yyyy-mm-dd
   email: string | null;
   sex: string | null;
+  phone: string | null;
+  mention: string | null; // ex. « Dirigeant +16 ans » dans l'extract Gesthand
 };
 
 function norm(s: string): string {
@@ -63,6 +65,7 @@ export async function importLicensees(
             last_name: row.last_name.trim(),
             birth_date: row.birth_date,
             email: row.email,
+            phone: row.phone,
             sex: row.sex === "M" || row.sex === "F" ? row.sex : null,
           })
           .select("id, first_name, last_name, birth_date")
@@ -82,8 +85,14 @@ export async function importLicensees(
         : row.birth_date
           ? new Date(row.birth_date).getFullYear()
           : null;
-      const tariff = findTariffForBirthYear(tariffs ?? [], birthYear);
-      const team = findTeamFor(teams ?? [], birthYear, row.sex);
+      // Mention « Dirigeant » de l'extract Gesthand → tarif Dirigeant, pas d'équipe
+      const isDirigeant = /dirigeant/i.test(row.mention ?? "");
+      const tariff = isDirigeant
+        ? ((tariffs ?? []).find((t) => /dirigeant/i.test(t.category)) ?? null)
+        : findTariffForBirthYear(tariffs ?? [], birthYear);
+      const team = isDirigeant
+        ? null
+        : findTeamFor(teams ?? [], birthYear, row.sex);
 
       const { error } = await supabase.from("licenses").insert({
         member_id: member.id,

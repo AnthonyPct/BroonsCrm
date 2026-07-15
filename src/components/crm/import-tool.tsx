@@ -42,6 +42,12 @@ const HEADER_MAP: Record<string, keyof ImportRow> = {
   sexe: "sex",
   sex: "sex",
   genre: "sex",
+  telephone: "phone",
+  tlphone: "phone", // « Téléphone » une fois les accents retirés
+  portable: "phone",
+  mobile: "phone",
+  mention: "mention",
+  categorie: "mention",
 };
 
 function toIsoDate(v: unknown): string | null {
@@ -66,6 +72,13 @@ function normSex(v: unknown): string | null {
   if (s.startsWith("M") || s === "H") return "M";
   if (s.startsWith("F")) return "F";
   return null;
+}
+
+function normPhone(v: unknown): string | null {
+  const s = String(v ?? "").replace(/[^\d+]/g, "");
+  if (!s) return null;
+  // les exports Gesthand perdent parfois le 0 initial (ex. « 631167132 »)
+  return s.length === 9 && !s.startsWith("0") ? `0${s}` : s;
 }
 
 export function ImportTool({
@@ -129,14 +142,17 @@ export function ImportTool({
           birth_date: null,
           email: null,
           sex: null,
+          phone: null,
+          mention: null,
         };
         for (const [header, field] of mapping) {
           const value = r[header];
           if (field === "birth_date") row.birth_date = toIsoDate(value);
           else if (field === "sex") row.sex = normSex(value);
-          else if (field === "email")
-            row.email = String(value ?? "").trim() || null;
-          else row[field] = String(value ?? "").trim();
+          else if (field === "phone") row.phone = normPhone(value);
+          else if (field === "email" || field === "mention") {
+            row[field] = String(value ?? "").trim() || null;
+          } else row[field] = String(value ?? "").trim();
         }
         return row;
       })
