@@ -15,11 +15,14 @@ type HaOrder = {
   payer?: { firstName?: string; lastName?: string; email?: string };
   items?: unknown[];
   amount?: { total?: number };
+  payments?: HaPayment[];
 };
 
 type HaPayment = {
   id: number | string;
   amount?: number;
+  // les paiements listés dans items[].payments n'ont que { id, shareAmount }
+  shareAmount?: number;
   date?: string;
   state?: string;
   order?: HaOrder;
@@ -40,21 +43,46 @@ export async function upsertOrder(
   fallbackPayer?: HaPayment["payer"],
   fallbackItems?: unknown[]
 ) {
-  const payer = order.payer ?? fallbackPayer ?? {};
-  const { error } = await supabase.from("helloasso_orders").upsert(
-    {
-      ha_order_id: String(order.id),
-      form_slug: order.formSlug ?? null,
-      payer_first_name: payer.firstName ?? null,
-      payer_last_name: payer.lastName ?? null,
-      payer_email: payer.email ?? null,
-      items: order.items ?? fallbackItems ?? [],
-      amount_total: (order.amount?.total ?? 0) / 100,
-      order_date: order.date ?? null,
-      raw: order as Record<string, unknown>,
-    },
-    { onConflict: "ha_order_id" }
-  );
+  const payer = order.payer ?? fallbackPayer;
+  const items = (order.items ?? fallbackItems) as
+    | { amount?: number }[]
+    | undefined;
+  const amountTotal =
+    order.amount?.total ??
+    (items?.length
+      ? items.reduce((sum, it) => sum + (it.amount ?? 0), 0)
+      : undefined);
+
+  const base = {
+    ha_order_id: String(order.id),
+    form_slug: order.formSlug ?? null,
+    order_date: order.date ?? null,
+    raw: order as Record<string, unknown>,
+  };
+
+  // Notification « légère » (sans payer, montant ni items — HelloAsso en envoie
+  // lors des mises à jour de commande) : on garantit l'existence de la ligne
+  // sans écraser les données complètes déjà connues.
+  if (!payer && amountTotal === undefined) {
+    const { error } = await supabase
+      .from("helloasso_orders")
+      .upsert(base, { onConflict: "ha_order_id", ignoreDuplicates: true });
+    if (error) throw new Error(`upsert order: ${error.message}`);
+    return;
+  }
+
+  const patch: Record<string, unknown> = { ...base };
+  if (payer) {
+    patch.payer_first_name = payer.firstName ?? null;
+    patch.payer_last_name = payer.lastName ?? null;
+    patch.payer_email = payer.email ?? null;
+  }
+  if (items) patch.items = items;
+  if (amountTotal !== undefined) patch.amount_total = amountTotal / 100;
+
+  const { error } = await supabase
+    .from("helloasso_orders")
+    .upsert(patch, { onConflict: "ha_order_id" });
   if (error) throw new Error(`upsert order: ${error.message}`);
 }
 
@@ -63,17 +91,24 @@ export async function upsertPayment(
   payment: HaPayment
 ) {
   if (!payment.order?.id) return;
-  const { error } = await supabase.from("helloasso_payments").upsert(
-    {
-      ha_payment_id: String(payment.id),
-      ha_order_id: String(payment.order.id),
-      amount: (payment.amount ?? 0) / 100,
-      status: payment.state ?? null,
-      payment_date: payment.date ?? null,
-      raw: payment as Record<string, unknown>,
-    },
-    { onConflict: "ha_payment_id" }
-  );
+  const row = {
+    ha_payment_id: String(payment.id),
+    ha_order_id: String(payment.order.id),
+    amount: (payment.amount ?? payment.shareAmount ?? 0) / 100,
+    status: payment.state ?? null,
+    payment_date: payment.date ?? null,
+    raw: payment as Record<string, unknown>,
+  };
+
+  // Version partielle (items[].payments d'une notif Order, sans state) :
+  // ne jamais écraser une ligne complète venue d'un événement Payment.
+  const options = payment.state
+    ? { onConflict: "ha_payment_id" }
+    : { onConflict: "ha_payment_id", ignoreDuplicates: true };
+
+  const { error } = await supabase
+    .from("helloasso_payments")
+    .upsert(row, options);
   if (error) throw new Error(`upsert payment: ${error.message}`);
 }
 
@@ -124,10 +159,16 @@ Deno.serve(async (req: Request) => {
       const order = body.data as HaOrder;
       await upsertOrder(supabase, order);
       // Certaines notifications Order embarquent les paiements des items
+      // ({ id, shareAmount } seulement) : on résout la version complète
+      // (montant, état, date) depuis order.payments quand elle est présente.
+      const fullPayments = new Map(
+        (order.payments ?? []).map((p) => [String(p.id), p])
+      );
       const items = (order.items ?? []) as { payments?: HaPayment[] }[];
       for (const item of items) {
         for (const p of item.payments ?? []) {
-          await upsertPayment(supabase, { ...p, order });
+          const full = fullPayments.get(String(p.id));
+          await upsertPayment(supabase, { ...p, ...(full ?? {}), order });
         }
       }
       await reconcileOrder(supabase, String(order.id));
