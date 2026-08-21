@@ -142,6 +142,19 @@ export async function updateLicenseStatus(
   revalidatePath("/crm/dashboard");
 }
 
+/** Statut de repli quand on retire la qualification : payée si le dû est couvert. */
+async function unqualifiedStatus(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  licenseId: string
+): Promise<LicenseStatus> {
+  const { data: fin } = await supabase
+    .from("license_financials")
+    .select("payment_status")
+    .eq("license_id", licenseId)
+    .maybeSingle();
+  return fin?.payment_status === "payee" ? "payee" : "attente_paiement";
+}
+
 export async function toggleQualification(licenseId: string, qualified: boolean) {
   const supabase = await createClient();
   const { error } = await supabase
@@ -152,7 +165,10 @@ export async function toggleQualification(licenseId: string, qualified: boolean)
             status: "qualifiee",
             qualified_at: new Date().toISOString().slice(0, 10),
           }
-        : { status: "attente_paiement", qualified_at: null }
+        : {
+            status: await unqualifiedStatus(supabase, licenseId),
+            qualified_at: null,
+          }
     )
     .eq("id", licenseId);
   if (error) throw new Error(error.message);
@@ -165,18 +181,38 @@ export async function toggleQualification(licenseId: string, qualified: boolean)
 export async function bulkQualify(licenseIds: string[], qualified: boolean) {
   if (!licenseIds.length) return;
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("licenses")
-    .update(
-      qualified
-        ? {
-            status: "qualifiee",
-            qualified_at: new Date().toISOString().slice(0, 10),
-          }
-        : { status: "attente_paiement", qualified_at: null }
-    )
-    .in("id", licenseIds);
-  if (error) throw new Error(error.message);
+  if (qualified) {
+    const { error } = await supabase
+      .from("licenses")
+      .update({
+        status: "qualifiee",
+        qualified_at: new Date().toISOString().slice(0, 10),
+      })
+      .in("id", licenseIds);
+    if (error) throw new Error(error.message);
+  } else {
+    // Repli différencié : payée si le dû est couvert, en attente sinon
+    const { data: fins } = await supabase
+      .from("license_financials")
+      .select("license_id, payment_status")
+      .in("license_id", licenseIds);
+    const paid = new Set(
+      (fins ?? [])
+        .filter((f) => f.payment_status === "payee")
+        .map((f) => f.license_id)
+    );
+    for (const status of ["payee", "attente_paiement"] as const) {
+      const ids = licenseIds.filter((id) =>
+        status === "payee" ? paid.has(id) : !paid.has(id)
+      );
+      if (!ids.length) continue;
+      const { error } = await supabase
+        .from("licenses")
+        .update({ status, qualified_at: null })
+        .in("id", ids);
+      if (error) throw new Error(error.message);
+    }
+  }
   revalidatePath("/crm/licencies");
   revalidatePath("/crm/dashboard");
 }

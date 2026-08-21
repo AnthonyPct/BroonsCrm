@@ -35,12 +35,26 @@ export async function addPayment(licenseId: string, formData: FormData) {
   });
   if (error) throw new Error(error.message);
 
-  // Sort la licence de "à saisir" dès qu'un paiement arrive
-  await supabase
-    .from("licenses")
-    .update({ status: "attente_paiement" })
-    .eq("id", licenseId)
-    .eq("status", "a_saisir");
+  // Avance le statut : sort de « à saisir », et passe « payée » si le dû
+  // est couvert (tolérance 10 € incluse dans la vue). Jamais de retour arrière.
+  const { data: fin } = await supabase
+    .from("license_financials")
+    .select("payment_status")
+    .eq("license_id", licenseId)
+    .maybeSingle();
+  if (fin?.payment_status === "payee") {
+    await supabase
+      .from("licenses")
+      .update({ status: "payee" })
+      .eq("id", licenseId)
+      .in("status", ["a_saisir", "attente_paiement"]);
+  } else {
+    await supabase
+      .from("licenses")
+      .update({ status: "attente_paiement" })
+      .eq("id", licenseId)
+      .eq("status", "a_saisir");
+  }
 
   revalidatePath(`/crm/licencies/${licenseId}`);
   revalidatePath("/crm/licencies");
