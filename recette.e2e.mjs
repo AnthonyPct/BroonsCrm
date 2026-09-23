@@ -237,6 +237,103 @@ try {
     await page.getByText("8 licencié(s) affiché(s)").isVisible()
   );
 
+  // ---------- PLANNING : JOURNÉE À DOMICILE ----------
+  // Le planning n'était pas couvert par la recette : on vérifie d'abord le
+  // socle (une journée existe, ses matchs s'affichent avec un horaire calculé)
+  // avant de vérifier ce que l'intégration FFHB y ajoute.
+  await page.goto(BASE + "/crm/planning");
+  const premiereJournee = page.locator('a[href^="/crm/planning/"]').first();
+  const aUneJournee = await premiereJournee.isVisible().catch(() => false);
+  check("Liste des journées à domicile accessible", aUneJournee);
+
+  if (aUneJournee) {
+    await premiereJournee.click();
+    await page.waitForURL("**/crm/planning/**");
+    check(
+      "Barre d'actions de la journée",
+      await page.getByText("Recalculer les horaires").isVisible()
+    );
+
+    // ---------- FFHB : IMPORT DANS UNE JOURNÉE ----------
+    const boutonImport = page.getByRole("button", {
+      name: /Importer depuis la FFHB/,
+    });
+    check("Bouton d'import FFHB présent", await boutonImport.isVisible());
+
+    await boutonImport.click();
+    check(
+      "Modale d'import ouverte",
+      await page
+        .getByText("Matchs du week-end trouvés sur la FFHB")
+        .isVisible()
+    );
+    // Soit des propositions, soit un état vide explicite — jamais une modale
+    // muette qui laisserait croire à un bug.
+    const aDesPropositions = await page
+      .getByText("À domicile", { exact: true })
+      .isVisible()
+      .catch(() => false);
+    const aUnEtatVide = await page
+      .getByText(/Aucune (rencontre trouvée|équipe n'est reliée)/)
+      .isVisible()
+      .catch(() => false);
+    check(
+      "Propositions ou état vide explicite",
+      aDesPropositions || aUnEtatVide,
+      aDesPropositions ? "propositions listées" : "état vide"
+    );
+    check(
+      "Fraîcheur du cache affichée",
+      await page.getByText(/Données FFHB|Jamais synchronisé/).isVisible()
+    );
+    await page.screenshot({ path: SHOTS + "/12-ffhb-import.png", fullPage: true });
+    await page.keyboard.press("Escape");
+  }
+
+  // ---------- FFHB : POULE D'ÉQUIPE ----------
+  await page.goto(BASE + "/crm/parametres/equipes");
+  check(
+    "Colonne Poule FFHB dans l'éditeur d'équipes",
+    await page.getByText("Poule FFHB", { exact: true }).isVisible()
+  );
+  const badgeRelie = page.getByRole("button", { name: "Pays de broons" }).first();
+  const badgeARelier = page.getByRole("button", { name: "À relier" }).first();
+  const unBadge = (await badgeRelie.isVisible().catch(() => false))
+    ? badgeRelie
+    : badgeARelier;
+  check("Badge de rattachement cliquable", await unBadge.isVisible());
+
+  await unBadge.click();
+  check(
+    "Modale de rattachement ouverte",
+    await page.getByText(/Relier .* à sa poule FFHB/).isVisible()
+  );
+  // Une URL qui n'est pas une page de poule doit produire un message
+  // actionnable, pas un code d'erreur brut.
+  await page.fill(
+    'input[placeholder^="https://www.ffhandball.fr"]',
+    "https://www.ffhandball.fr/clubs/"
+  );
+  await page.getByRole("button", { name: "Rechercher la poule" }).click();
+  await page.waitForTimeout(3000);
+  check(
+    "URL invalide → message explicite",
+    await page.getByText(/ne ressemble pas à une page de poule/).isVisible()
+  );
+  await page.screenshot({ path: SHOTS + "/13-ffhb-poule.png", fullPage: true });
+  await page.keyboard.press("Escape");
+
+  // ---------- FFHB : CARTE INTÉGRATIONS ----------
+  await page.goto(BASE + "/crm/parametres/integrations");
+  check(
+    "Carte FFHB dans Intégrations",
+    await page.getByText("FFHB — ffhandball.fr").isVisible()
+  );
+  check(
+    "Compteur de rencontres en cache",
+    await page.getByText("Rencontres en cache").isVisible()
+  );
+
   // ---------- DÉCONNEXION ----------
   await page.click('[title="Se déconnecter"]');
   await page.waitForURL("**/crm/login");

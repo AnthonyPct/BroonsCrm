@@ -75,6 +75,55 @@ select cron.schedule(
 );
 ```
 
+## 6. Synchronisation FFHB
+
+> ✅ **Déjà en place au 23/09/2026** : extensions `pg_cron`/`pg_net` installées et
+> les deux tâches ci-dessous planifiées. Cette section sert de référence pour
+> les reconstituer (changement de secret, nouvelle saison, autre projet).
+
+L'Edge Function `ffhb-sync` lit les calendriers et classements sur ffhandball.fr
+et les met en cache. Deux passages suffisent : un le matin pour le calendrier du
+week-end à venir, un le dimanche soir pour les résultats.
+
+Le créneau du dimanche est volontairement tardif : les pages de la fédération
+sont servies par CloudFront avec un `max-age=3600`, donc une synchro lancée à
+19 h peut relire une page figée à 18 h.
+
+```sql
+select cron.schedule(
+  'ffhb-sync-daily',
+  '30 4 * * *',
+  $$
+  select net.http_post(
+    url := 'https://htfcpujcypraqdlacgow.supabase.co/functions/v1/ffhb-sync',
+    headers := jsonb_build_object('x-ffhb-secret', '<FFHB_SECRET>', 'Content-Type', 'application/json'),
+    body := '{"mode":"sync","scope":"window"}'::jsonb
+  );
+  $$
+);
+
+select cron.schedule(
+  'ffhb-sync-sunday-night',
+  '0 22 * * 0',
+  $$
+  select net.http_post(
+    url := 'https://htfcpujcypraqdlacgow.supabase.co/functions/v1/ffhb-sync',
+    headers := jsonb_build_object('x-ffhb-secret', '<FFHB_SECRET>', 'Content-Type', 'application/json'),
+    body := '{"mode":"sync","scope":"window"}'::jsonb
+  );
+  $$
+);
+```
+
+Côté application, `FFHB_SECRET` doit exister **dans Vercel** (le bouton
+« Synchroniser maintenant » appelle la fonction depuis une server action) et,
+idéalement, **dans les secrets Edge Functions** pour ne plus dépendre de la
+valeur par défaut codée en dur.
+
+Chaque équipe se relie ensuite à sa poule dans CRM → Paramètres → Équipes :
+coller l'URL de la poule sur ffhandball.fr, puis confirmer l'équipe proposée.
+À refaire chaque saison, les poules changeant d'identifiant.
+
 ## Checklist mise en production
 
 - [ ] Projet Vercel déployé, variables d'env posées
@@ -84,4 +133,7 @@ select cron.schedule(
 - [ ] Rattrapage initial lancé (historique importé)
 - [ ] Données de démo purgées (voir README)
 - [ ] Mot de passe admin changé si souhaité (Supabase → Authentication → Users)
+- [x] `FFHB_SECRET` posé dans Vercel et dans les secrets Edge Functions
+- [x] Crons `ffhb-sync` planifiés (23/09/2026)
+- [ ] Équipes reliées à leur poule (Séniors M faite ; 8 restantes)
 - [ ] (Optionnel) Protection « leaked password » activée : Supabase → Auth → Settings

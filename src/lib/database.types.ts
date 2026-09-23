@@ -32,6 +32,299 @@ export type Database = {
         }
         Relationships: []
       }
+      ffhb_classement: {
+        Row: {
+          buts_contre: number | null
+          buts_pour: number | null
+          equipe_id: string | null
+          equipe_libelle: string
+          gagnes: number | null
+          id: string
+          joues: number | null
+          nuls: number | null
+          perdus: number | null
+          points: number | null
+          poule_id: string
+          rang: number
+          synced_at: string
+        }
+        Insert: {
+          buts_contre?: number | null
+          buts_pour?: number | null
+          equipe_id?: string | null
+          equipe_libelle: string
+          gagnes?: number | null
+          id?: string
+          joues?: number | null
+          nuls?: number | null
+          perdus?: number | null
+          points?: number | null
+          poule_id: string
+          rang: number
+          synced_at?: string
+        }
+        Update: {
+          buts_contre?: number | null
+          buts_pour?: number | null
+          equipe_id?: string | null
+          equipe_libelle?: string
+          gagnes?: number | null
+          id?: string
+          joues?: number | null
+          nuls?: number | null
+          perdus?: number | null
+          points?: number | null
+          poule_id?: string
+          rang?: number
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ffhb_classement_poule_id_fkey"
+            columns: ["poule_id"]
+            isOneToOne: false
+            referencedRelation: "ffhb_poules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ffhb_equipements: {
+        Row: {
+          code_postal: string | null
+          equipement_id: string
+          ext_equipement_id: string | null
+          latitude: number | null
+          libelle: string | null
+          longitude: number | null
+          raw: Json | null
+          rue: string | null
+          synced_at: string
+          ville: string | null
+        }
+        Insert: {
+          code_postal?: string | null
+          equipement_id: string
+          ext_equipement_id?: string | null
+          latitude?: number | null
+          libelle?: string | null
+          longitude?: number | null
+          raw?: Json | null
+          rue?: string | null
+          synced_at?: string
+          ville?: string | null
+        }
+        Update: {
+          code_postal?: string | null
+          equipement_id?: string
+          ext_equipement_id?: string | null
+          latitude?: number | null
+          libelle?: string | null
+          longitude?: number | null
+          raw?: Json | null
+          rue?: string | null
+          synced_at?: string
+          ville?: string | null
+        }
+        Relationships: []
+      }
+      ffhb_poules: {
+        Row: {
+          competition_slug: string
+          competition_type: string
+          created_at: string
+          current_journee: number | null
+          ext_competition_id: string
+          ext_poule_id: string
+          ext_saison_id: string
+          id: string
+          journee_count: number
+          journees: Json
+          label: string
+          last_ext_updated_at: string | null
+          last_sync_error: string | null
+          last_sync_status: string
+          last_synced_at: string | null
+          season_id: string
+          source_url: string
+          updated_at: string
+        }
+        Insert: {
+          competition_slug: string
+          competition_type: string
+          created_at?: string
+          current_journee?: number | null
+          ext_competition_id: string
+          ext_poule_id: string
+          ext_saison_id: string
+          id?: string
+          journee_count?: number
+          journees?: Json
+          label?: string
+          last_ext_updated_at?: string | null
+          last_sync_error?: string | null
+          last_sync_status?: string
+          last_synced_at?: string | null
+          season_id: string
+          source_url: string
+          updated_at?: string
+        }
+        Update: {
+          competition_slug?: string
+          competition_type?: string
+          created_at?: string
+          current_journee?: number | null
+          ext_competition_id?: string
+          ext_poule_id?: string
+          ext_saison_id?: string
+          id?: string
+          journee_count?: number
+          journees?: Json
+          label?: string
+          last_ext_updated_at?: string | null
+          last_sync_error?: string | null
+          last_sync_status?: string
+          last_synced_at?: string | null
+          season_id?: string
+          source_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ffhb_poules_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ffhb_rencontres: {
+        Row: {
+          arbitre1: string | null
+          arbitre2: string | null
+          date_heure: string | null
+          equipe1_id: string | null
+          equipe1_libelle: string
+          equipe2_id: string | null
+          equipe2_libelle: string
+          equipement_id: string | null
+          ext_rencontre_id: string
+          ext_updated_at: string | null
+          fdm_code: string | null
+          id: string
+          journee_numero: number
+          poule_id: string
+          raw: Json
+          score1: number | null
+          score1_mt: number | null
+          score2: number | null
+          score2_mt: number | null
+          synced_at: string
+        }
+        Insert: {
+          arbitre1?: string | null
+          arbitre2?: string | null
+          date_heure?: string | null
+          equipe1_id?: string | null
+          equipe1_libelle: string
+          equipe2_id?: string | null
+          equipe2_libelle: string
+          equipement_id?: string | null
+          ext_rencontre_id: string
+          ext_updated_at?: string | null
+          fdm_code?: string | null
+          id?: string
+          journee_numero: number
+          poule_id: string
+          raw?: Json
+          score1?: number | null
+          score1_mt?: number | null
+          score2?: number | null
+          score2_mt?: number | null
+          synced_at?: string
+        }
+        Update: {
+          arbitre1?: string | null
+          arbitre2?: string | null
+          date_heure?: string | null
+          equipe1_id?: string | null
+          equipe1_libelle?: string
+          equipe2_id?: string | null
+          equipe2_libelle?: string
+          equipement_id?: string | null
+          ext_rencontre_id?: string
+          ext_updated_at?: string | null
+          fdm_code?: string | null
+          id?: string
+          journee_numero?: number
+          poule_id?: string
+          raw?: Json
+          score1?: number | null
+          score1_mt?: number | null
+          score2?: number | null
+          score2_mt?: number | null
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ffhb_rencontres_poule_id_fkey"
+            columns: ["poule_id"]
+            isOneToOne: false
+            referencedRelation: "ffhb_poules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ffhb_sync_runs: {
+        Row: {
+          equipements_resolved: number
+          error: string | null
+          finished_at: string | null
+          http_requests: number
+          id: string
+          mode: string
+          poule_id: string | null
+          rencontres_upserted: number
+          scope: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          equipements_resolved?: number
+          error?: string | null
+          finished_at?: string | null
+          http_requests?: number
+          id?: string
+          mode: string
+          poule_id?: string | null
+          rencontres_upserted?: number
+          scope?: string | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          equipements_resolved?: number
+          error?: string | null
+          finished_at?: string | null
+          http_requests?: number
+          id?: string
+          mode?: string
+          poule_id?: string | null
+          rencontres_upserted?: number
+          scope?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ffhb_sync_runs_poule_id_fkey"
+            columns: ["poule_id"]
+            isOneToOne: false
+            referencedRelation: "ffhb_poules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       helloasso_orders: {
         Row: {
           amount_total: number
@@ -253,6 +546,8 @@ export type Database = {
       matchday_matches: {
         Row: {
           created_at: string
+          ffhb_ext_rencontre_id: string | null
+          ffhb_official_at: string | null
           id: string
           matchday_id: string
           opponent: string
@@ -263,6 +558,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          ffhb_ext_rencontre_id?: string | null
+          ffhb_official_at?: string | null
           id?: string
           matchday_id: string
           opponent?: string
@@ -273,6 +570,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          ffhb_ext_rencontre_id?: string | null
+          ffhb_official_at?: string | null
           id?: string
           matchday_id?: string
           opponent?: string
@@ -548,6 +847,9 @@ export type Database = {
           birth_year_max: number | null
           birth_year_min: number | null
           created_at: string
+          ffhb_equipe_id: string | null
+          ffhb_equipe_libelle: string | null
+          ffhb_poule_id: string | null
           gender: string | null
           id: string
           is_youth: boolean
@@ -562,6 +864,9 @@ export type Database = {
           birth_year_max?: number | null
           birth_year_min?: number | null
           created_at?: string
+          ffhb_equipe_id?: string | null
+          ffhb_equipe_libelle?: string | null
+          ffhb_poule_id?: string | null
           gender?: string | null
           id?: string
           is_youth?: boolean
@@ -576,6 +881,9 @@ export type Database = {
           birth_year_max?: number | null
           birth_year_min?: number | null
           created_at?: string
+          ffhb_equipe_id?: string | null
+          ffhb_equipe_libelle?: string | null
+          ffhb_poule_id?: string | null
           gender?: string | null
           id?: string
           is_youth?: boolean
@@ -587,6 +895,13 @@ export type Database = {
           warmup_minutes?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "teams_ffhb_poule_id_fkey"
+            columns: ["ffhb_poule_id"]
+            isOneToOne: false
+            referencedRelation: "ffhb_poules"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "teams_season_id_fkey"
             columns: ["season_id"]
@@ -639,6 +954,36 @@ export type Database = {
         Args: { p_license_id: string; p_order_id: string }
         Returns: undefined
       }
+      ffhb_rencontres_for_matchday: {
+        Args: { p_matchday_id: string }
+        Returns: {
+          arbitre1: string | null
+          arbitre2: string | null
+          date_heure: string | null
+          equipe1_id: string | null
+          equipe1_libelle: string
+          equipe2_id: string | null
+          equipe2_libelle: string
+          equipement_id: string | null
+          ext_rencontre_id: string
+          ext_updated_at: string | null
+          fdm_code: string | null
+          id: string
+          journee_numero: number
+          poule_id: string
+          raw: Json
+          score1: number | null
+          score1_mt: number | null
+          score2: number | null
+          score2_mt: number | null
+          synced_at: string
+        }[]
+      }
+      ffhb_replace_classement: {
+        Args: { p_poule_id: string; p_rows: Json }
+        Returns: number
+      }
+      ffhb_sync_health: { Args: never; Returns: Json }
       find_license_for_ha_order: {
         Args: { p_order_id: string }
         Returns: string

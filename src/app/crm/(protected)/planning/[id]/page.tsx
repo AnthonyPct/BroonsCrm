@@ -11,6 +11,12 @@ import {
 } from "@/components/crm/matchday-board";
 import { MAX_KICKOFF, shortName, timeToMinutes } from "@/lib/planning";
 import {
+  buildImportProposals,
+  relativeFrom,
+  type CachedRencontre,
+} from "@/lib/ffhb";
+import type { BoardProposal } from "@/components/crm/ffhb-import-dialog";
+import {
   rankCandidates,
   rankHallManagers,
   type EquityCounts,
@@ -181,15 +187,82 @@ export default async function MatchdayPage({
     },
     matches: boardMatches,
     teams: [], // rempli ci-dessous
+    ffhb: {
+      configured: false,
+      unlinkedTeams: [],
+      lastSyncLabel: null,
+      lastSyncError: null,
+      proposals: [],
+    }, // rempli ci-dessous
     overflow: lastKickoff > MAX_KICKOFF,
   };
 
   const { data: teams } = await supabase
     .from("teams")
-    .select("id, name")
+    .select("id, name, ffhb_poule_id, ffhb_equipe_id")
     .eq("season_id", season.id)
     .order("sort_order");
-  board.teams = teams ?? [];
+  board.teams = (teams ?? []).map((t) => ({ id: t.id, name: t.name }));
+
+  // Propositions d'import FFHB, lues côté serveur pour que la modale s'ouvre
+  // sans latence et que le compteur du bouton soit juste avant le clic.
+  // Le cache fait foi : on ne contacte jamais ffhandball.fr depuis Next.js.
+  const [{ data: rencontres }, { data: settings }] = await Promise.all([
+    supabase.rpc("ffhb_rencontres_for_matchday", { p_matchday_id: id }),
+    supabase
+      .from("app_settings")
+      .select("key, value")
+      .in("key", ["ffhb_last_sync_at", "ffhb_last_sync_error"]),
+  ]);
+
+  const configuredTeams = (teams ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    ffhbPouleId: t.ffhb_poule_id,
+    ffhbEquipeId: t.ffhb_equipe_id,
+  }));
+  const cached: CachedRencontre[] = (rencontres ?? []).map((r) => ({
+    extRencontreId: r.ext_rencontre_id,
+    pouleId: r.poule_id,
+    journeeNumero: r.journee_numero,
+    dateHeure: r.date_heure,
+    equipe1Id: r.equipe1_id,
+    equipe2Id: r.equipe2_id,
+    equipe1Libelle: r.equipe1_libelle,
+    equipe2Libelle: r.equipe2_libelle,
+  }));
+
+  const proposals: BoardProposal[] = buildImportProposals(
+    cached,
+    configuredTeams,
+    (matches ?? []).map((m) => ({
+      id: m.id,
+      teamId: m.team_id,
+      ffhbExtRencontreId: m.ffhb_ext_rencontre_id,
+    })),
+    matchday.date
+  ).map((p) => ({
+    key: p.rencontre.extRencontreId,
+    status: p.status,
+    teamId: p.team?.id ?? null,
+    teamName: p.team?.name ?? null,
+    opponent: p.opponent,
+    officialAt: p.officialAt,
+    officialLabel: p.officialAt ? officialLabel(p.officialAt) : null,
+    dateDiffers: p.dateDiffers,
+    dateUnconfirmed: p.dateUnconfirmed,
+    existingMatchId: p.existingMatchId,
+  }));
+
+  const bySetting = new Map((settings ?? []).map((s) => [s.key, s.value]));
+  const lastSync = bySetting.get("ffhb_last_sync_at");
+  board.ffhb = {
+    configured: configuredTeams.some((t) => t.ffhbPouleId),
+    unlinkedTeams: configuredTeams.filter((t) => !t.ffhbPouleId).map((t) => t.name),
+    lastSyncLabel: lastSync ? relativeFrom(lastSync) : null,
+    lastSyncError: bySetting.get("ffhb_last_sync_error") || null,
+    proposals,
+  };
 
   async function removeDay() {
     "use server";
@@ -231,4 +304,23 @@ export default async function MatchdayPage({
       <MatchdayBoard data={board} />
     </div>
   );
+}
+
+/** « sam. 03/10 · 18h30 », en heure de Paris. */
+function officialLabel(iso: string): string {
+  const date = new Date(iso);
+  const jour = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+  const heure = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+    .format(date)
+    .replace(":", "h");
+  return `${jour} · ${heure}`;
 }

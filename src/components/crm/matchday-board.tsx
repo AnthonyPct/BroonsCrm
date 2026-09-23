@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import {
   ArrowDown,
   ArrowUp,
+  Download,
   ImageDown,
   Mail,
   Plus,
@@ -30,6 +31,10 @@ import {
   setMatchOpponent,
   setMatchTime,
 } from "@/app/actions/planning";
+import {
+  FfhbImportDialog,
+  type BoardFfhb,
+} from "@/components/crm/ffhb-import-dialog";
 import { cn } from "@/lib/utils";
 
 export type Option = {
@@ -56,6 +61,7 @@ export type BoardData = {
   hallManager: { current: { id: string; label: string } | null; options: Option[] };
   matches: BoardMatch[];
   teams: { id: string; name: string }[];
+  ffhb: BoardFfhb;
   overflow: boolean;
   convocation: { emails: string[]; missing: string[] };
 };
@@ -128,6 +134,10 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
   // serveur dès que l'édition est enregistrée (sinon les refresh seraient ignorés)
   const [opponentEdits, setOpponentEdits] = useState<Record<string, string>>({});
   const [timeEdits, setTimeEdits] = useState<Record<string, string>>({});
+  const [importOpen, setImportOpen] = useState(false);
+  const importable = data.ffhb.proposals.filter(
+    (p) => p.status === "importable" || p.status === "rattachable"
+  ).length;
 
   function convocationText(): string {
     const lines = [`🤾 ${data.dateLabel} — Salle du Chalet, Broons`];
@@ -314,6 +324,18 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
 
       {/* barre d'actions */}
       <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setImportOpen(true)}
+          className="flex items-center gap-1.5 rounded-[9px] border bg-card px-3.5 py-2 text-[12.5px] font-bold transition-colors hover:border-primary hover:text-primary"
+        >
+          <Download className="size-3.5" />
+          Importer depuis la FFHB
+          {importable > 0 && (
+            <span className="rounded-full bg-primary px-1.5 text-[11px] text-white">
+              {importable}
+            </span>
+          )}
+        </button>
         <button
           disabled={pending || data.matches.length === 0}
           onClick={() =>
@@ -551,7 +573,8 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
         ))}
         {data.matches.length === 0 && (
           <div className="rounded-2xl border bg-card py-10 text-center text-sm text-muted-foreground">
-            Aucun match — ajoutez le premier ci-dessous.
+            Aucun match — importez-les depuis la FFHB ou ajoutez-en un
+            ci-dessous.
           </div>
         )}
       </div>
@@ -589,6 +612,14 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
           Ajouter le match
         </button>
       </form>
+
+      <FfhbImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        matchdayId={data.matchdayId}
+        dateLabel={data.dateLabel}
+        ffhb={data.ffhb}
+      />
     </div>
   );
 }

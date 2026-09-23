@@ -4,9 +4,15 @@ import { useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { saveTeams, type TeamInput } from "@/app/actions/equipes";
+import { TeamFfhbDialog } from "@/components/crm/team-ffhb-dialog";
 import type { Team } from "@/lib/planning";
+import { cn } from "@/lib/utils";
 
-type Row = TeamInput & { key: string };
+// Le rattachement FFHB ne passe PAS par `saveTeams` : il a sa propre action
+// (`bindTeamPool`), parce qu'il exige un aller-retour vers ffhandball.fr. Il
+// vit quand même dans l'état local pour que le badge se mette à jour sans
+// recharger la page.
+type Row = TeamInput & { key: string; ffhbLibelle: string | null };
 
 const cellInput =
   "w-full rounded-[7px] border bg-secondary px-2 py-[5px] text-[12.5px] outline-none transition-colors focus:border-primary focus:bg-card";
@@ -30,9 +36,11 @@ export function TeamEditor({
       match_duration_minutes: t.match_duration_minutes,
       is_youth: t.is_youth,
       sort_order: t.sort_order,
+      ffhbLibelle: t.ffhb_equipe_libelle,
     }))
   );
   const [pending, startTransition] = useTransition();
+  const [ffhbFor, setFfhbFor] = useState<Row | null>(null);
 
   function update(key: string, patch: Partial<Row>) {
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -62,7 +70,7 @@ export function TeamEditor({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-2xl border bg-card shadow-[0_1px_2px_rgba(0,0,0,.03)]">
-        <div className="grid min-w-[860px] grid-cols-[44px_1.5fr_1.1fr_.7fr_.8fr_.8fr_.7fr_44px] items-center border-b bg-secondary px-4 py-[13px]">
+        <div className="grid min-w-[960px] grid-cols-[44px_1.4fr_1fr_.6fr_.7fr_.7fr_.6fr_104px_44px] items-center border-b bg-secondary px-4 py-[13px]">
           {[
             "Ordre",
             "Équipe",
@@ -71,6 +79,7 @@ export function TeamEditor({
             "Échauff. (min)",
             "Match (min)",
             "Jeunes",
+            "Poule FFHB",
             "",
           ].map((h, i) => (
             <div
@@ -84,7 +93,7 @@ export function TeamEditor({
         {rows.map((r, i) => (
           <div
             key={r.key}
-            className="grid min-w-[860px] grid-cols-[44px_1.5fr_1.1fr_.7fr_.8fr_.8fr_.7fr_44px] items-center border-b border-muted px-4 py-2.5 last:border-b-0"
+            className="grid min-w-[960px] grid-cols-[44px_1.4fr_1fr_.6fr_.7fr_.7fr_.6fr_104px_44px] items-center border-b border-muted px-4 py-2.5 last:border-b-0"
           >
             <div className="flex flex-col">
               <button
@@ -177,6 +186,30 @@ export function TeamEditor({
                 title="Équipe jeunes (arbitre désigné par le club, pas de contrainte 18h)"
               />
             </div>
+            <div className="pr-3">
+              {r.id ? (
+                <button
+                  onClick={() => setFfhbFor(r)}
+                  title={
+                    r.ffhbLibelle
+                      ? `Reliée à ${r.ffhbLibelle}`
+                      : "Relier cette équipe à sa poule sur ffhandball.fr"
+                  }
+                  className={cn(
+                    "max-w-full truncate rounded-full px-[11px] py-[3px] text-[11.5px] font-bold transition-opacity hover:opacity-80",
+                    r.ffhbLibelle
+                      ? "bg-[#e7f4ec] text-[#1f7a48]"
+                      : "bg-accent text-destructive"
+                  )}
+                >
+                  {r.ffhbLibelle ?? "À relier"}
+                </button>
+              ) : (
+                <span className="text-[11.5px] text-[#9C958D]">
+                  Enregistrez d&apos;abord
+                </span>
+              )}
+            </div>
             <button
               title="Supprimer l'équipe"
               onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}
@@ -191,7 +224,8 @@ export function TeamEditor({
           après Séniors M). « Jeunes » coché → arbitre désigné par le club ;
           décoché → équipe sénior (arbitre du comité, pas de match avant 18h00).
           Les années et le genre servent à proposer l&apos;équipe
-          automatiquement sur les fiches.
+          automatiquement sur les fiches. La poule FFHB sert au
+          pré-remplissage des journées à domicile — à re-saisir chaque saison.
         </div>
       </div>
 
@@ -210,6 +244,7 @@ export function TeamEditor({
                 match_duration_minutes: 60,
                 is_youth: true,
                 sort_order: rs.length + 1,
+                ffhbLibelle: null,
               },
             ])
           }
@@ -251,6 +286,21 @@ export function TeamEditor({
           Enregistrer
         </button>
       </div>
+
+      {ffhbFor && (
+        <TeamFfhbDialog
+          open
+          onOpenChange={(next) => {
+            if (!next) setFfhbFor(null);
+          }}
+          teamId={ffhbFor.id!}
+          teamName={ffhbFor.name}
+          currentLabel={ffhbFor.ffhbLibelle}
+          onChanged={(libelle) =>
+            update(ffhbFor.key, { ffhbLibelle: libelle })
+          }
+        />
+      )}
     </div>
   );
 }

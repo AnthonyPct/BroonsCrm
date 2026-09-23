@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Lock, Mail, RefreshCw } from "lucide-react";
+import { Lock, Mail, RefreshCw, Trophy } from "lucide-react";
+import { FfhbToolbar } from "@/components/crm/ffhb-toolbar";
 import { ReconciliationToolbar } from "@/components/crm/reconciliation-toolbar";
 import { saveSetting } from "@/app/actions/parametres";
 import { formatDate } from "@/lib/format";
@@ -20,17 +21,42 @@ function KeyValueCell({ label, value }: { label: string; value: React.ReactNode 
 
 export default async function IntegrationsPage() {
   const supabase = await createClient();
-  const [{ data: settings }, { count: receivedCount }] = await Promise.all([
+  const [
+    { data: settings },
+    { count: receivedCount },
+    { count: rencontresCount },
+    { data: poules },
+    { count: teamsLinked },
+    { count: teamsTotal },
+    { data: ffhbHealth },
+  ] = await Promise.all([
     supabase.from("app_settings").select("*"),
     supabase
       .from("helloasso_payments")
       .select("id", { count: "exact", head: true }),
+    supabase
+      .from("ffhb_rencontres")
+      .select("id", { count: "exact", head: true }),
+    supabase.from("ffhb_poules").select("label, last_sync_status"),
+    supabase
+      .from("teams")
+      .select("id", { count: "exact", head: true })
+      .not("ffhb_poule_id", "is", null),
+    supabase.from("teams").select("id", { count: "exact", head: true }),
+    supabase.rpc("ffhb_sync_health"),
   ]);
   const get = (key: string) =>
     settings?.find((s) => s.key === key)?.value ?? "";
 
   const orgSlug = get("helloasso_org_slug");
   const lastBackfill = get("helloasso_last_backfill_at");
+  const ffhbLastSync = get("ffhb_last_sync_at");
+  const ffhbLastError = get("ffhb_last_sync_error");
+  // La péremption est calculée par la base (`ffhb_sync_health`) : la règle de
+  // pureté de React interdit `Date.now()` pendant le rendu.
+  const ffhbStale =
+    (ffhbHealth as { stale?: boolean; last_synced_at?: string } | null)?.stale ===
+      true && !!ffhbLastSync;
   const webhookUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/helloasso-webhook`;
 
   async function saveSlug(formData: FormData) {
@@ -181,6 +207,61 @@ export default async function IntegrationsPage() {
           </div>
           <div className="mt-4">
             <ReconciliationToolbar />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,.03)]">
+          <div className="flex items-center gap-2.5">
+            <Trophy className="size-4 text-muted-foreground" />
+            <span className="font-display text-[15px] font-bold">
+              FFHB — ffhandball.fr
+            </span>
+            <span
+              className={`ml-auto rounded-full px-[11px] py-[3px] text-[11.5px] font-bold ${
+                (teamsLinked ?? 0) > 0
+                  ? "bg-success-bg text-success"
+                  : "bg-warning-bg text-[#8a5a10]"
+              }`}
+            >
+              {(teamsLinked ?? 0) > 0 ? "Connecté" : "À configurer"}
+            </span>
+          </div>
+          <p className="mt-2.5 text-[12.5px] leading-relaxed text-muted-foreground">
+            Calendriers et classements lus sur le site de la ligue, mis en cache
+            ici. La FFHB dit quels matchs se jouent ; le CRM reste maître des
+            horaires.
+          </p>
+          <div className="mt-4 flex flex-col gap-px overflow-hidden rounded-[10px] bg-muted">
+            <KeyValueCell
+              label="Équipes reliées"
+              value={`${teamsLinked ?? 0} / ${teamsTotal ?? 0}`}
+            />
+            <KeyValueCell
+              label="Poules suivies"
+              value={
+                poules?.length
+                  ? poules.map((p) => p.label).join(", ")
+                  : "aucune"
+              }
+            />
+            <KeyValueCell
+              label="Rencontres en cache"
+              value={String(rencontresCount ?? 0)}
+            />
+            <KeyValueCell
+              label="Dernière synchro"
+              value={ffhbLastSync ? formatDate(ffhbLastSync) : "jamais exécutée"}
+            />
+          </div>
+          {(ffhbLastError || ffhbStale) && (
+            <p className="mt-3 rounded-[10px] bg-warning-bg px-3 py-2 text-[11.5px] font-semibold text-[#8a5a10]">
+              {ffhbLastError
+                ? `Dernière synchro en échec : ${ffhbLastError}`
+                : "Aucune synchronisation depuis plus de 48 h — le cron est peut-être arrêté."}
+            </p>
+          )}
+          <div className="mt-4">
+            <FfhbToolbar />
           </div>
         </div>
       </div>

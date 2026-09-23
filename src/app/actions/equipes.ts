@@ -15,6 +15,12 @@ export type TeamInput = {
   sort_order: number;
 };
 
+/**
+ * ⚠️ Le payload d'update ci-dessous est exhaustif et volontairement AMPUTÉ des
+ * colonnes `ffhb_*` : elles sont écrites par `bindTeamPool` (actions/ffhb.ts)
+ * et ne doivent jamais transiter par cet écran, sinon le prochain clic sur
+ * « Enregistrer » effacerait le rattachement à la poule.
+ */
 export async function saveTeams(seasonId: string, rows: TeamInput[]) {
   const supabase = await createClient();
 
