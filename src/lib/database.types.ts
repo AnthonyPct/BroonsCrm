@@ -989,6 +989,7 @@ export type Database = {
         Returns: string
       }
       get_public_matchdays: { Args: never; Returns: Json }
+      get_public_matchs: { Args: never; Returns: Json }
       norm_text: { Args: { t: string }; Returns: string }
       reconcile_all_ha_orders: { Args: never; Returns: Json }
       try_match_ha_order: { Args: { p_order_id: string }; Returns: boolean }

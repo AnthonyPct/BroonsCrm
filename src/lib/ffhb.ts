@@ -308,3 +308,14 @@ export function relativeFrom(iso: string, now: Date = new Date()): string {
   const days = Math.round(hours / 24);
   return `il y a ${days} j`;
 }
+
+/**
+ * URL du PDF de feuille de match : les 4 premières lettres du code font les
+ * dossiers. Copie volontaire de `fdmPdfUrl` dans
+ * `supabase/functions/ffhb-sync/extract.ts` — l'Edge Function doit rester
+ * autonome, on ne partage pas de code entre Deno et Next.
+ */
+export function fdmPdfUrl(fdmCode: string): string {
+  const code = fdmCode.trim().toUpperCase();
+  return `https://fdm.fdme.ffhandball.fr/${code.slice(0, 4).split("").join("/")}/${code}.pdf`;
+}
