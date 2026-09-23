@@ -12,7 +12,8 @@ import {
   FfhbContractError,
   buildPouleUrl,
   buildRencontreUrl,
-  journeeForDate,
+  currentJournee,
+  journeesInWindow,
   parseClassement,
   parsePouleSelector,
   parseRencontres,
@@ -194,7 +195,7 @@ async function syncPoule(
   const poule = poules.find((p) => p.extPouleId === row.ext_poule_id) ?? poules[0];
 
   const today = new Date().toISOString().slice(0, 10);
-  const current = journeeForDate(poule.journees, today) ?? row.current_journee ?? 1;
+  const current = currentJournee(poule.journees, today) ?? row.current_journee ?? 1;
 
   await supabase
     .from("ffhb_poules")
@@ -218,13 +219,14 @@ async function syncPoule(
   skipped += first.skipped;
   seen += first.rencontres.length + first.skipped;
 
+  // Fenêtre choisie sur les dates, pas sur les numéros : une journée reportée
+  // garde son numéro, et un mercredi ne tombe dans aucune journée.
   const journees =
     scope === "full"
       ? poule.journees.map((j) => j.numero)
-      : [current - 1, current, current + 1];
+      : journeesInWindow(poule.journees, today);
 
   for (const numero of journees) {
-    if (numero < 1 || numero > poule.journees.length) continue;
     if (first.rencontres.some((r) => r.journeeNumero === numero)) continue;
     if (budget.used >= MAX_REQUESTS) break;
 

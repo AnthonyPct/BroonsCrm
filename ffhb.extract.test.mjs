@@ -13,7 +13,9 @@ import {
   extractComponent,
   fdmPdfUrl,
   findEquipesForStructure,
+  currentJournee,
   journeeForDate,
+  journeesInWindow,
   normalizeRencontre,
   parseClassement,
   parsePouleSelector,
@@ -72,6 +74,22 @@ eq(
   "190087",
 );
 
+// Le slug peut contenir des « -chiffre » avant l'id (« 16-ans-1ere-… ») :
+// seul le dernier segment numérique, juste avant le « / », est l'id.
+eq(
+  "slug contenant des chiffres (16-ans-1ere-…)",
+  parsePouleUrl(
+    "https://www.ffhandball.fr/competitions/saison-2026-2027-22/regional/16-ans-1ere-division-territoriale-feminine-p-12-33078/poule-195394/journee-2/",
+  ),
+  {
+    extSaisonId: "22",
+    competitionType: "regional",
+    competitionSlug: "16-ans-1ere-division-territoriale-feminine-p-12-33078",
+    extCompetitionId: "33078",
+    extPouleId: "195394",
+  },
+);
+
 check("URL hors compétitions rejetée", parsePouleUrl("https://www.ffhandball.fr/clubs/") === null);
 check("texte quelconque rejeté", parsePouleUrl("bonjour") === null);
 
@@ -111,6 +129,19 @@ eq("une structure inconnue ne renvoie rien", findEquipesForStructure(equipeOptio
 eq("journée couvrant un samedi", journeeForDate(poules[0].journees, "2026-09-26"), 3);
 eq("journée couvrant le dimanche suivant", journeeForDate(poules[0].journees, "2026-09-27"), 3);
 eq("date hors calendrier", journeeForDate(poules[0].journees, "2026-10-25"), null);
+
+// Calendrier réel de la D1F poule 4 : la J1 est reportée après la J5.
+const d1f = [
+  { numero: 1, dateDebut: "2026-10-24", dateFin: "2026-10-25" },
+  { numero: 2, dateDebut: "2026-09-19", dateFin: "2026-09-20" },
+  { numero: 3, dateDebut: "2026-09-26", dateFin: "2026-09-27" },
+  { numero: 4, dateDebut: "2026-10-03", dateFin: "2026-10-04" },
+  { numero: 5, dateDebut: "2026-10-10", dateFin: "2026-10-11" },
+];
+eq("un mercredi → la prochaine journée par date", currentJournee(d1f, "2026-09-23"), 3);
+eq("un samedi → la journée qui le couvre", currentJournee(d1f, "2026-10-24"), 1);
+eq("après la saison → la dernière jouée", currentJournee(d1f, "2027-06-01"), 1);
+eq("fenêtre choisie sur les dates, pas sur les numéros", journeesInWindow(d1f, "2026-09-23"), [2, 3, 4]);
 
 // ---------- RENCONTRES ----------
 

@@ -118,7 +118,7 @@ export class FfhbContractError extends Error {
 const BASE_URL = "https://www.ffhandball.fr";
 
 const POULE_URL_RE =
-  /\/competitions\/saison-(?:[0-9]{4}-[0-9]{4})-([0-9]+)\/([a-z-]+)\/([a-z0-9-]*?-([0-9]+))(?:\/poule-([0-9]+))?/i;
+  /\/competitions\/saison-(?:[0-9]{4}-[0-9]{4})-([0-9]+)\/([a-z-]+)\/([a-z0-9-]*-([0-9]+))(?=[/?#]|$)(?:\/poule-([0-9]+))?/i;
 
 /**
  * Découpe une URL de poule ffhandball.fr. Le segment `poule-…` est facultatif :
@@ -450,6 +450,45 @@ export function journeeForDate(journees: FfhbJournee[], date: string): number | 
     if (day >= journee.dateDebut && day <= journee.dateFin) return journee.numero;
   }
   return null;
+}
+
+/**
+ * Journée « courante » : celle qui couvre la date, sinon la prochaine à venir
+ * (un mercredi tombe entre deux week-ends), sinon la dernière jouée. Choisie
+ * sur les dates et non sur les numéros : une journée reportée garde son
+ * numéro (la J1 d'une poule peut se jouer après la J5).
+ */
+export function currentJournee(journees: FfhbJournee[], date: string): number | null {
+  const day = date.slice(0, 10);
+  const covering = journeeForDate(journees, day);
+  if (covering !== null) return covering;
+  const sorted = [...journees].sort((a, b) => a.dateDebut.localeCompare(b.dateDebut));
+  const next = sorted.find((j) => j.dateDebut > day);
+  if (next) return next.numero;
+  return sorted.length ? sorted[sorted.length - 1].numero : null;
+}
+
+/**
+ * Numéros des journées dont les dates recoupent [date - pastDays, date + futureDays].
+ * C'est la fenêtre de la synchro quotidienne : les scores du week-end passé et
+ * les programmations à venir, quel que soit l'ordre des numéros.
+ */
+export function journeesInWindow(
+  journees: FfhbJournee[],
+  date: string,
+  pastDays = 7,
+  futureDays = 14,
+): number[] {
+  const shift = (days: number) => {
+    const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+  const from = shift(-pastDays);
+  const to = shift(futureDays);
+  return journees
+    .filter((j) => j.dateFin >= from && j.dateDebut <= to)
+    .map((j) => j.numero);
 }
 
 /** URL du PDF de feuille de match : les 4 premières lettres du code font les dossiers. */
