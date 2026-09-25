@@ -82,6 +82,7 @@ export function TeamFfhbDialog({
           teamId,
           resolved.pouleId,
           equipe.id,
+          equipe.extEquipeId,
           equipe.libelle,
           equipe.structureId,
         );

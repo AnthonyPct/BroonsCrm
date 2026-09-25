@@ -441,6 +441,37 @@ export function findEquipesForStructure(
 }
 
 /**
+ * Retrouve notre équipe dans la liste d'une poule, alors que la FFHB peut
+ * regénérer ses ids INTERNES en cours de saison (constaté le 24/09/2026 :
+ * 1764976 → 1815469, sur toutes les équipes de la poule). Seul `ext_equipeId`
+ * est stable ; mais les rencontres ne portent que l'id interne, d'où ce
+ * rapprochement à chaque synchro.
+ *
+ * Par ordre de confiance : l'id externe connu, puis l'ancien id interne
+ * (équipes reliées avant qu'on stocke l'id externe), puis le club — seulement
+ * s'il n'a qu'une équipe dans la poule, sinon on ne devine pas.
+ */
+export function matchOurEquipe(
+  options: FfhbEquipeOption[],
+  team: { extEquipeId: string | null; equipeId: string | null },
+  structureId: string | null,
+): FfhbEquipeOption | null {
+  if (team.extEquipeId) {
+    const byExt = options.find((o) => o.extEquipeId === team.extEquipeId);
+    if (byExt) return byExt;
+  }
+  if (team.equipeId) {
+    const byId = options.find((o) => o.id === team.equipeId);
+    if (byId) return byId;
+  }
+  if (structureId) {
+    const ours = findEquipesForStructure(options, structureId);
+    if (ours.length === 1) return ours[0];
+  }
+  return null;
+}
+
+/**
  * Numéro de la journée couvrant une date (AAAA-MM-JJ). Évite de balayer les
  * 22 journées d'une poule pour pré-remplir un samedi : une seule requête suffit.
  */

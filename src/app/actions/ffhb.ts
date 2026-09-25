@@ -50,6 +50,8 @@ async function callEdge(body: Record<string, unknown>): Promise<
 
 export type PouleEquipe = {
   id: string;
+  /** Id stable côté FFHB : l'id interne (`id`) peut être regénéré en cours de saison. */
+  extEquipeId: string | null;
   libelle: string;
   structureId: string | null;
 };
@@ -86,7 +88,7 @@ export async function resolvePoule(url: string): Promise<ResolveResult> {
     code?: string;
     error?: string;
     poule?: { id: string; label: string; journeeCount: number };
-    equipes?: { id: string; libelle: string; structureId: string | null }[];
+    equipes?: PouleEquipe[];
   };
   if (!data.ok || !data.poule) {
     return {
@@ -131,6 +133,7 @@ export async function bindTeamPool(
   teamId: string,
   pouleId: string,
   equipeId: string,
+  extEquipeId: string | null,
   equipeLibelle: string,
   structureId: string | null,
 ) {
@@ -140,6 +143,7 @@ export async function bindTeamPool(
     .update({
       ffhb_poule_id: pouleId,
       ffhb_equipe_id: equipeId,
+      ffhb_ext_equipe_id: extEquipeId,
       ffhb_equipe_libelle: equipeLibelle,
     })
     .eq("id", teamId);
@@ -171,6 +175,7 @@ export async function unbindTeamPool(teamId: string) {
     .update({
       ffhb_poule_id: null,
       ffhb_equipe_id: null,
+      ffhb_ext_equipe_id: null,
       ffhb_equipe_libelle: null,
     })
     .eq("id", teamId);

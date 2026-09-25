@@ -16,6 +16,7 @@ import {
   currentJournee,
   journeeForDate,
   journeesInWindow,
+  matchOurEquipe,
   normalizeRencontre,
   parseClassement,
   parsePouleSelector,
@@ -123,6 +124,20 @@ const nous = findEquipesForStructure(equipeOptions, "503");
 eq("le club trouvé par son id de structure", nous.length, 1);
 eq("libellé FFHB du club", nous[0].libelle, "Pays de broons");
 eq("une structure inconnue ne renvoie rien", findEquipesForStructure(equipeOptions, "999999").length, 0);
+
+// Renumérotation FFHB du 24/09/2026 : l'id interne change, l'externe reste.
+const apres = [
+  { id: "1815469", extEquipeId: "2118882", structureId: "503", libelle: "Pays de broons" },
+  { id: "1815474", extEquipeId: "2118890", structureId: "610", libelle: "Tinteniac Combourg HBC 1" },
+];
+eq("retrouvée par l'id externe", matchOurEquipe(apres, { extEquipeId: "2118882", equipeId: "1764976" }, null)?.id, "1815469");
+eq("id externe inconnu : retrouvée par le club", matchOurEquipe(apres, { extEquipeId: null, equipeId: "1764976" }, "503")?.id, "1815469");
+eq("pas encore renumérotée : retrouvée par l'id interne", matchOurEquipe(nous, { extEquipeId: null, equipeId: "1764976" }, null)?.extEquipeId, "2118882");
+eq(
+  "deux équipes du club dans la poule : on ne devine pas",
+  matchOurEquipe([...apres, { id: "9", extEquipeId: "9", structureId: "503", libelle: "Pays de broons 2" }], { extEquipeId: null, equipeId: "1764976" }, "503"),
+  null,
+);
 
 // ---------- CALENDRIER ----------
 

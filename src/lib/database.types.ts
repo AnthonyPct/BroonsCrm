@@ -848,6 +848,7 @@ export type Database = {
           birth_year_min: number | null
           created_at: string
           ffhb_equipe_id: string | null
+          ffhb_ext_equipe_id: string | null
           ffhb_equipe_libelle: string | null
           ffhb_poule_id: string | null
           gender: string | null
@@ -865,6 +866,7 @@ export type Database = {
           birth_year_min?: number | null
           created_at?: string
           ffhb_equipe_id?: string | null
+          ffhb_ext_equipe_id?: string | null
           ffhb_equipe_libelle?: string | null
           ffhb_poule_id?: string | null
           gender?: string | null
@@ -882,6 +884,7 @@ export type Database = {
           birth_year_min?: number | null
           created_at?: string
           ffhb_equipe_id?: string | null
+          ffhb_ext_equipe_id?: string | null
           ffhb_equipe_libelle?: string | null
           ffhb_poule_id?: string | null
           gender?: string | null

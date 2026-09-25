@@ -14,11 +14,13 @@ import {
   buildRencontreUrl,
   currentJournee,
   journeesInWindow,
+  matchOurEquipe,
   parseClassement,
   parsePouleSelector,
   parseRencontres,
   parseSalle,
   parsePouleUrl,
+  type FfhbEquipeOption,
   type FfhbRencontre,
   type PouleRef,
 } from "./extract.ts";
@@ -191,8 +193,12 @@ async function syncPoule(
   // 1. La page de la poule donne trois choses d'un coup : le calendrier, la
   //    journée courante et le classement. C'est le principal levier de budget.
   const html = await fetchPage(buildPouleUrl(ref), budget);
-  const { poules } = parsePouleSelector(html, row.source_url);
+  const { poules, equipeOptions } = parsePouleSelector(html, row.source_url);
   const poule = poules.find((p) => p.extPouleId === row.ext_poule_id) ?? poules[0];
+
+  // Avant tout : si la FFHB a renuméroté ses équipes, nos rencontres ne se
+  // retrouveraient plus. On réaligne l'équipe et le cache d'abord.
+  await reconcileTeams(supabase, row.id, equipeOptions);
 
   const today = new Date().toISOString().slice(0, 10);
   const current = currentJournee(poule.journees, today) ?? row.current_journee ?? 1;
@@ -307,6 +313,71 @@ async function syncPoule(
     equipements,
     current,
   };
+}
+
+/**
+ * Réaligne l'id interne FFHB de nos équipes reliées à cette poule. La FFHB
+ * peut regénérer ces ids en cours de saison (vu le 24/09/2026) ; seul
+ * `ext_equipeId` reste stable. Quand l'id change, on met à jour l'équipe et on
+ * réécrit les rencontres déjà en cache, pour que les journées non encore
+ * resynchronisées restent rattachées.
+ */
+async function reconcileTeams(
+  supabase: SupabaseClient,
+  pouleId: string,
+  options: FfhbEquipeOption[],
+) {
+  const { data: teams } = await supabase
+    .from("teams")
+    .select("id, ffhb_equipe_id, ffhb_ext_equipe_id")
+    .eq("ffhb_poule_id", pouleId);
+  if (!teams?.length) return;
+
+  const { data: setting } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", "ffhb_structure_id")
+    .maybeSingle();
+  // Le repli par club n'est sûr que pour une seule équipe du club reliée à
+  // cette poule : avec deux, il pourrait les confondre.
+  const structureId = teams.length === 1 ? (setting?.value || null) : null;
+
+  for (const team of teams) {
+    const match = matchOurEquipe(
+      options,
+      { extEquipeId: team.ffhb_ext_equipe_id, equipeId: team.ffhb_equipe_id },
+      structureId,
+    );
+    if (!match) {
+      console.error("ffhb-sync : équipe introuvable dans la poule", team.id, pouleId);
+      continue;
+    }
+    const old = team.ffhb_equipe_id;
+    if (match.id === old && match.extEquipeId === team.ffhb_ext_equipe_id) continue;
+
+    await supabase
+      .from("teams")
+      .update({
+        ffhb_equipe_id: match.id,
+        ffhb_ext_equipe_id: match.extEquipeId,
+        ffhb_equipe_libelle: match.libelle,
+      })
+      .eq("id", team.id);
+
+    if (old && old !== match.id) {
+      console.log("ffhb-sync : équipe renumérotée", team.id, old, "→", match.id);
+      await supabase
+        .from("ffhb_rencontres")
+        .update({ equipe1_id: match.id })
+        .eq("poule_id", pouleId)
+        .eq("equipe1_id", old);
+      await supabase
+        .from("ffhb_rencontres")
+        .update({ equipe2_id: match.id })
+        .eq("poule_id", pouleId)
+        .eq("equipe2_id", old);
+    }
+  }
 }
 
 async function resolveEquipements(
