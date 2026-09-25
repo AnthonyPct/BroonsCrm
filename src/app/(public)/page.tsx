@@ -9,7 +9,7 @@ const TAG_LOISIRS = "bg-success-bg text-success";
 
 const HORAIRES: {
   jour: string;
-  creneaux: { cat: string; heure: string; tag: string }[];
+  creneaux: { cat: string; heure: string; tag: string; lieu?: string }[];
 }[] = [
   {
     jour: "Lundi",
@@ -18,23 +18,31 @@ const HORAIRES: {
   {
     jour: "Mardi",
     creneaux: [
-      { cat: "U15 M", heure: "17h30 – 19h00", tag: TAG_JEUNES },
+      { cat: "U15 M", heure: "17h45 – 19h15", tag: TAG_JEUNES },
       { cat: "Séniors F", heure: "19h45 – 21h15", tag: TAG_SENIORS },
     ],
   },
   {
     jour: "Mercredi",
     creneaux: [
-      { cat: "U11", heure: "15h00 – 16h30", tag: TAG_JEUNES },
-      { cat: "U13 M", heure: "16h30 – 18h00", tag: TAG_JEUNES },
+      { cat: "U11", heure: "15h00 – 16h30", tag: TAG_JEUNES, lieu: "Jean Monnet" },
+      {
+        cat: "U13 M · U13 F · U15 F",
+        heure: "16h30 – 18h00",
+        tag: TAG_JEUNES,
+        lieu: "Jean Monnet",
+      },
       { cat: "U18 F", heure: "18h15 – 19h45", tag: TAG_JEUNES },
       { cat: "U18 M · SM", heure: "19h45 – 21h15", tag: TAG_SENIORS },
     ],
   },
   {
+    jour: "Jeudi",
+    creneaux: [{ cat: "U13 M · U15 M", heure: "18h30 – 19h15", tag: TAG_JEUNES }],
+  },
+  {
     jour: "Vendredi",
     creneaux: [
-      { cat: "U13 M · U15 M", heure: "17h30 – 19h00", tag: TAG_JEUNES },
       { cat: "U18 F · SF", heure: "19h00 – 20h30", tag: TAG_JEUNES },
       { cat: "U18 M · SM", heure: "20h30 – 22h00", tag: TAG_SENIORS },
     ],
@@ -141,7 +149,7 @@ export default function HomePage() {
       {/* ÉQUIPES */}
       <section
         id="equipes"
-        className="mx-auto w-full max-w-[1160px] scroll-mt-32 sm:scroll-mt-20 px-7 pb-10 pt-[88px]"
+        className="mx-auto w-full max-w-[1160px] scroll-mt-20 px-7 pb-10 pt-[88px]"
       >
         <div className="mx-auto mb-11 max-w-[600px] text-center">
           <div className="text-[12.5px] font-extrabold uppercase tracking-[.1em] text-primary">
@@ -240,7 +248,7 @@ export default function HomePage() {
       {/* INFOS */}
       <section
         id="infos"
-        className="mx-auto w-full max-w-[1160px] scroll-mt-32 sm:scroll-mt-20 px-7 pb-10 pt-[52px]"
+        className="mx-auto w-full max-w-[1160px] scroll-mt-20 px-7 pb-10 pt-[52px]"
       >
         <div className="grid items-stretch gap-[22px] md:grid-cols-[1.3fr_1fr]">
           <div className="rounded-[18px] border bg-card p-[30px] shadow-[0_1px_3px_rgba(0,0,0,.04)]">
@@ -261,7 +269,7 @@ export default function HomePage() {
                   </span>
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     {h.creneaux.map((c) => (
-                      <div key={c.cat} className="flex items-center gap-3">
+                      <div key={c.cat} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span
                           className={`min-w-[96px] flex-none rounded-lg px-2.5 py-1 text-center text-[11.5px] font-extrabold ${c.tag}`}
                         >
@@ -270,6 +278,12 @@ export default function HomePage() {
                         <span className="text-sm font-bold tabular-nums">
                           {c.heure}
                         </span>
+                        {c.lieu && (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#9C958D]">
+                            <MapPin className="size-3" />
+                            {c.lieu}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -353,7 +367,7 @@ export default function HomePage() {
       </section>
 
       {/* CONTACT */}
-      <section id="contact" className="mt-12 scroll-mt-32 sm:scroll-mt-20 bg-[#17130F] text-white">
+      <section id="contact" className="mt-12 scroll-mt-20 bg-[#17130F] text-white">
         <div className="mx-auto grid w-full max-w-[1160px] items-center gap-11 px-7 py-[72px] md:grid-cols-2">
           <div>
             <div className="text-[12.5px] font-extrabold uppercase tracking-[.1em] text-[#ff4258]">
