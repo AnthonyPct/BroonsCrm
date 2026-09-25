@@ -141,7 +141,7 @@ export default function HomePage() {
       {/* ÉQUIPES */}
       <section
         id="equipes"
-        className="mx-auto w-full max-w-[1160px] scroll-mt-20 px-7 pb-10 pt-[88px]"
+        className="mx-auto w-full max-w-[1160px] scroll-mt-32 sm:scroll-mt-20 px-7 pb-10 pt-[88px]"
       >
         <div className="mx-auto mb-11 max-w-[600px] text-center">
           <div className="text-[12.5px] font-extrabold uppercase tracking-[.1em] text-primary">
@@ -240,7 +240,7 @@ export default function HomePage() {
       {/* INFOS */}
       <section
         id="infos"
-        className="mx-auto w-full max-w-[1160px] scroll-mt-20 px-7 pb-10 pt-[52px]"
+        className="mx-auto w-full max-w-[1160px] scroll-mt-32 sm:scroll-mt-20 px-7 pb-10 pt-[52px]"
       >
         <div className="grid items-stretch gap-[22px] md:grid-cols-[1.3fr_1fr]">
           <div className="rounded-[18px] border bg-card p-[30px] shadow-[0_1px_3px_rgba(0,0,0,.04)]">
@@ -353,7 +353,7 @@ export default function HomePage() {
       </section>
 
       {/* CONTACT */}
-      <section id="contact" className="mt-12 scroll-mt-20 bg-[#17130F] text-white">
+      <section id="contact" className="mt-12 scroll-mt-32 sm:scroll-mt-20 bg-[#17130F] text-white">
         <div className="mx-auto grid w-full max-w-[1160px] items-center gap-11 px-7 py-[72px] md:grid-cols-2">
           <div>
             <div className="text-[12.5px] font-extrabold uppercase tracking-[.1em] text-[#ff4258]">

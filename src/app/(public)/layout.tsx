@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Lock } from "lucide-react";
+import { PublicNavLinks } from "@/components/public/public-nav";
 
 // Données structurées lues par Google et les assistants IA
 const CLUB_JSON_LD = {
@@ -64,30 +65,7 @@ export default function PublicLayout({
             </span>
           </Link>
           <div className="ml-auto flex items-center gap-1">
-            <Link
-              href="/#equipes"
-              className="hidden rounded-lg px-3.5 py-[9px] text-[13.5px] font-semibold text-[#e7e1d7] transition-colors hover:bg-white/10 hover:text-white sm:block"
-            >
-              Le club
-            </Link>
-            <Link
-              href="/matchs"
-              className="hidden rounded-lg px-3.5 py-[9px] text-[13.5px] font-semibold text-[#e7e1d7] transition-colors hover:bg-white/10 hover:text-white sm:block"
-            >
-              Matchs
-            </Link>
-            <Link
-              href="/#infos"
-              className="hidden rounded-lg px-3.5 py-[9px] text-[13.5px] font-semibold text-[#e7e1d7] transition-colors hover:bg-white/10 hover:text-white sm:block"
-            >
-              Horaires &amp; lieu
-            </Link>
-            <Link
-              href="/#contact"
-              className="hidden rounded-lg px-3.5 py-[9px] text-[13.5px] font-semibold text-[#e7e1d7] transition-colors hover:bg-white/10 hover:text-white sm:block"
-            >
-              Contact
-            </Link>
+            <PublicNavLinks variant="desktop" />
             <Link
               href="/licence"
               className="ml-1 shrink-0 whitespace-nowrap rounded-[9px] bg-primary px-3 py-2.5 text-xs font-bold text-white shadow-[0_2px_10px_rgba(216,30,52,.35)] transition-colors hover:bg-[#e83049] sm:ml-2 sm:px-[18px] sm:py-[11px] sm:text-[13px]"
@@ -104,6 +82,7 @@ export default function PublicLayout({
             </Link>
           </div>
         </div>
+        <PublicNavLinks variant="mobile" />
       </nav>
 
       <main className="flex-1">{children}</main>
