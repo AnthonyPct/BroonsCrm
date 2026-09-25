@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { recalcSchedule } from "@/app/actions/planning";
+import { weekendRange } from "@/lib/ffhb";
 
 /**
  * Toutes les lectures de ffhandball.fr passent par l'Edge Function `ffhb-sync` :
@@ -223,6 +224,40 @@ export async function triggerFfhbSync(
     };
   }
   return { ok: true, message: `${rencontres} rencontre(s) synchronisée(s)` };
+}
+
+/**
+ * Relit sur ffhandball.fr le week-end d'une journée (le jour et son
+ * lendemain, voir `weekendRange`), pour toutes les poules reliées. Appelé à
+ * l'ouverture d'une journée du planning : ses propositions d'import sont
+ * alors fraîches, quelle que soit la date, sans attendre la synchro de nuit.
+ */
+export async function refreshFfhbWeekend(
+  matchdayId: string,
+): Promise<{ ok: boolean; message: string; rencontres: number }> {
+  const supabase = await createClient();
+  const { data: matchday } = await supabase
+    .from("matchdays")
+    .select("date")
+    .eq("id", matchdayId)
+    .maybeSingle();
+  if (!matchday) return { ok: false, message: "Journée introuvable", rencontres: 0 };
+
+  const { start, end } = weekendRange(matchday.date);
+  const called = await callEdge({ mode: "weekend", start, end });
+  if (!called.ok) return { ok: false, message: called.message, rencontres: 0 };
+
+  const data = called.data as { ok: boolean; rencontres?: number; erreurs?: string[] };
+  // Le site public lit le même cache : il profite de la mise à jour.
+  revalidatePath("/matchs");
+  revalidatePath(`/crm/planning/${matchdayId}`);
+  return {
+    ok: data.ok,
+    rencontres: data.rencontres ?? 0,
+    message: data.erreurs?.length
+      ? `Mise à jour FFHB incomplète : ${data.erreurs.join(" | ")}`
+      : `${data.rencontres ?? 0} rencontre(s) à jour`,
+  };
 }
 
 // /////////////////////////////////////////////////////////////////////////

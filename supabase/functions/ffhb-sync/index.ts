@@ -13,6 +13,7 @@ import {
   buildPouleUrl,
   buildRencontreUrl,
   currentJournee,
+  journeesInRange,
   journeesInWindow,
   matchOurEquipe,
   parseClassement,
@@ -39,7 +40,13 @@ const CHUNK = 500;
 /** Politesse : ~1 requête/seconde. C'est de l'attente, pas du CPU. */
 const DELAY_MS = 1000;
 /** Plafond par invocation : les Edge Functions ont un mur à ~150 s. */
-const MAX_REQUESTS = 40;
+const MAX_REQUESTS = 60;
+/**
+ * Requêtes simultanées en mode `weekend`, où quelqu'un attend devant l'écran.
+ * Assez peu pour ne pas ressembler à une aspiration du site depuis un
+ * datacenter ; la synchro de nuit, elle, reste strictement séquentielle.
+ */
+const WEEKEND_CONCURRENCY = 4;
 /** Les salles se résolvent au fil de l'eau — jamais de pic sur un run. */
 const MAX_NEW_EQUIPEMENTS = 5;
 /** Au-delà, ce ne sont plus des trous mais un changement de format. */
@@ -60,12 +67,14 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type Budget = { used: number };
 
-async function fetchPage(url: string, budget: Budget): Promise<string> {
+async function fetchPage(url: string, budget: Budget, polite = true): Promise<string> {
   if (budget.used >= MAX_REQUESTS) {
     throw new Error(`budget de ${MAX_REQUESTS} requêtes épuisé`);
   }
   budget.used += 1;
-  if (budget.used > 1) await sleep(DELAY_MS);
+  // `polite` : une requête par seconde. Désactivé en mode `weekend`, où la
+  // retenue vient du nombre de requêtes simultanées.
+  if (polite && budget.used > 1) await sleep(DELAY_MS);
 
   let res = await fetch(url, { headers: HEADERS });
   if (!res.ok) {
@@ -261,8 +270,38 @@ async function syncPoule(
     return { status: "suspicious" as const, upserted: 0, equipements: 0, current };
   }
 
-  const rows = [...collected.values()].map((r) => ({
-    poule_id: row.id,
+  const upserted = await upsertRencontres(supabase, row.id, [...collected.values()]);
+
+  // 3. Classement — remplacé en bloc, et seulement s'il est non vide (le
+  //    garde-fou est aussi dans la fonction SQL).
+  const classement = parseClassement(html, row.source_url);
+  if (classement.length > 0) {
+    const { error } = await supabase.rpc("ffhb_replace_classement", {
+      p_poule_id: row.id,
+      p_rows: classement,
+    });
+    if (error) throw new Error(`classement : ${error.message}`);
+  }
+
+  // 4. Salles inconnues, au compte-gouttes.
+  const equipements = await resolveEquipements(supabase, ref, [...collected.values()], budget);
+
+  return {
+    status: (skipped > 0 ? "partial" : "ok") as "ok" | "partial",
+    upserted,
+    equipements,
+    current,
+  };
+}
+
+/** Écrit des rencontres dans le cache ; renvoie le nombre de lignes. */
+async function upsertRencontres(
+  supabase: SupabaseClient,
+  pouleId: string,
+  rencontres: FfhbRencontre[],
+): Promise<number> {
+  const rows = rencontres.map((r) => ({
+    poule_id: pouleId,
     ext_rencontre_id: r.extRencontreId,
     journee_numero: r.journeeNumero,
     date_heure: r.dateHeure,
@@ -292,27 +331,115 @@ async function syncPoule(
       .upsert(rows.slice(i, i + CHUNK), { onConflict: "ext_rencontre_id" });
     if (error) throw new Error(`upsert rencontres : ${error.message}`);
   }
+  return rows.length;
+}
 
-  // 3. Classement — remplacé en bloc, et seulement s'il est non vide (le
-  //    garde-fou est aussi dans la fonction SQL).
-  const classement = parseClassement(html, row.source_url);
-  if (classement.length > 0) {
-    const { error } = await supabase.rpc("ffhb_replace_classement", {
-      p_poule_id: row.id,
-      p_rows: classement,
-    });
-    if (error) throw new Error(`classement : ${error.message}`);
+/** `fn` sur chaque élément, au plus `limit` à la fois ; l'ordre est conservé. */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+// /////////////////////////////////////////////////////////////////////////
+// MODE WEEKEND — rafraîchir un week-end précis, à la demande
+// /////////////////////////////////////////////////////////////////////////
+
+/**
+ * Relit sur ffhandball.fr les journées qui couvrent [start, end], pour toutes
+ * les poules reliées à une équipe. Déclenché à l'ouverture d'une journée du
+ * planning : la synchro de nuit ne voit que 3 semaines devant, et on prépare
+ * parfois une journée plus tôt que ça.
+ *
+ * Une requête par poule en général (la page d'une journée porte aussi le
+ * calendrier et la liste des équipes), en parallèle. Les salles et le
+ * classement restent à la synchro de nuit : ils ne servent pas à préparer
+ * une journée à domicile.
+ */
+async function syncWeekend(supabase: SupabaseClient, start: string, end: string) {
+  const { data: season } = await supabase
+    .from("seasons")
+    .select("id")
+    .eq("is_current", true)
+    .single();
+  const { data: linked } = await supabase
+    .from("teams")
+    .select("ffhb_poule_id")
+    .eq("season_id", season!.id)
+    .not("ffhb_poule_id", "is", null);
+  const pouleIds = [...new Set((linked ?? []).map((t) => t.ffhb_poule_id as string))];
+  if (pouleIds.length === 0) return { poules: 0, rencontres: 0, requetes: 0, erreurs: [] };
+
+  const { data: poules } = await supabase
+    .from("ffhb_poules")
+    .select(
+      "id, ext_poule_id, ext_saison_id, ext_competition_id, competition_type, competition_slug, source_url, journees, current_journee",
+    )
+    .in("id", pouleIds);
+
+  const budget: Budget = { used: 0 };
+  const erreurs: string[] = [];
+
+  // Une tâche par (poule, journée) qui touche le week-end, d'après le
+  // calendrier connu. Presque toujours une seule journée par poule.
+  const tasks = ((poules ?? []) as PouleRow[]).flatMap((row) =>
+    journeesInRange(row.journees ?? [], start, end).map((numero) => ({ row, numero })),
+  );
+
+  const pages = await mapLimit(tasks, WEEKEND_CONCURRENCY, async ({ row, numero }) => {
+    try {
+      const html = await fetchPage(buildPouleUrl(refOf(row), numero), budget, false);
+      return { row, numero, html };
+    } catch (error) {
+      erreurs.push(`${row.ext_poule_id} J${numero} : ${error instanceof Error ? error.message : error}`);
+      return null;
+    }
+  });
+
+  let rencontres = 0;
+  const seenPoules = new Set<string>();
+  for (const page of pages) {
+    if (!page) continue;
+    const { row, html } = page;
+    // Calendrier et équipes : une fois par poule, sur la première page lue.
+    // Facultatif : si la page d'une journée ne portait pas le sélecteur, on
+    // enregistre quand même les rencontres, la synchro de nuit réalignera.
+    if (!seenPoules.has(row.id)) {
+      seenPoules.add(row.id);
+      try {
+        const { poules: found, equipeOptions } = parsePouleSelector(html, row.source_url);
+        const poule = found.find((p) => p.extPouleId === row.ext_poule_id) ?? found[0];
+        await reconcileTeams(supabase, row.id, equipeOptions);
+        if (poule.journees.length > 0) {
+          await supabase
+            .from("ffhb_poules")
+            .update({
+              journees: poule.journees,
+              journee_count: poule.journees.length,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", row.id);
+        }
+      } catch (error) {
+        console.error("ffhb-sync weekend : sélecteur illisible", row.ext_poule_id, error);
+      }
+    }
+    try {
+      const parsed = parseRencontres(html, row.source_url);
+      rencontres += await upsertRencontres(supabase, row.id, parsed.rencontres);
+    } catch (error) {
+      erreurs.push(`${row.ext_poule_id} : ${error instanceof Error ? error.message : error}`);
+    }
   }
 
-  // 4. Salles inconnues, au compte-gouttes.
-  const equipements = await resolveEquipements(supabase, ref, [...collected.values()], budget);
-
-  return {
-    status: (skipped > 0 ? "partial" : "ok") as "ok" | "partial",
-    upserted: rows.length,
-    equipements,
-    current,
-  };
+  return { poules: pouleIds.length, rencontres, requetes: budget.used, erreurs };
 }
 
 /**
@@ -454,6 +581,34 @@ Deno.serve(async (req: Request) => {
       console.error("ffhb-sync resolve", error);
       return json(errorPayload(error), 200);
     }
+  }
+
+  if (body.mode === "weekend") {
+    const start = String(body.start ?? "");
+    const end = String(body.end ?? start);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
+      return json({ ok: false, error: "start et end attendus au format AAAA-MM-JJ" }, 400);
+    }
+    const { data: run } = await supabase
+      .from("ffhb_sync_runs")
+      .insert({ mode: "weekend", scope: `${start}..${end}`, status: "running" })
+      .select("id")
+      .single();
+    const result = await syncWeekend(supabase, start, end);
+    const status = result.erreurs.length === 0 ? "ok" : result.rencontres > 0 ? "partial" : "error";
+    if (run) {
+      await supabase
+        .from("ffhb_sync_runs")
+        .update({
+          finished_at: new Date().toISOString(),
+          status,
+          http_requests: result.requetes,
+          rencontres_upserted: result.rencontres,
+          error: result.erreurs.length ? result.erreurs.join(" | ") : null,
+        })
+        .eq("id", run.id);
+    }
+    return json({ ok: status !== "error", status, ...result });
   }
 
   const scope: "window" | "full" = body.scope === "full" ? "full" : "window";

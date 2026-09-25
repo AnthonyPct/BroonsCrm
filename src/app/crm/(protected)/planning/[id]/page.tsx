@@ -301,7 +301,7 @@ export default async function MatchdayPage({
         </p>
       </div>
 
-      <MatchdayBoard data={board} />
+      <MatchdayBoard key={matchday.id} data={board} />
     </div>
   );
 }

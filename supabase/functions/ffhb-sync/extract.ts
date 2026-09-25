@@ -499,27 +499,32 @@ export function currentJournee(journees: FfhbJournee[], date: string): number | 
   return sorted.length ? sorted[sorted.length - 1].numero : null;
 }
 
+/** Numéros des journées dont les dates recoupent [from, to] (AAAA-MM-JJ, bornes incluses). */
+export function journeesInRange(journees: FfhbJournee[], from: string, to: string): number[] {
+  return journees
+    .filter((j) => j.dateFin >= from.slice(0, 10) && j.dateDebut <= to.slice(0, 10))
+    .map((j) => j.numero);
+}
+
 /**
  * Numéros des journées dont les dates recoupent [date - pastDays, date + futureDays].
  * C'est la fenêtre de la synchro quotidienne : les scores du week-end passé et
- * les programmations à venir, quel que soit l'ordre des numéros.
+ * les programmations à venir, quel que soit l'ordre des numéros. 21 jours
+ * devant : la page publique montre les deux prochains week-ends, qu'une
+ * fenêtre de 14 jours ne couvre pas toujours.
  */
 export function journeesInWindow(
   journees: FfhbJournee[],
   date: string,
   pastDays = 7,
-  futureDays = 14,
+  futureDays = 21,
 ): number[] {
   const shift = (days: number) => {
     const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
     d.setUTCDate(d.getUTCDate() + days);
     return d.toISOString().slice(0, 10);
   };
-  const from = shift(-pastDays);
-  const to = shift(futureDays);
-  return journees
-    .filter((j) => j.dateFin >= from && j.dateDebut <= to)
-    .map((j) => j.numero);
+  return journeesInRange(journees, shift(-pastDays), shift(futureDays));
 }
 
 /** URL du PDF de feuille de match : les 4 premières lettres du code font les dossiers. */

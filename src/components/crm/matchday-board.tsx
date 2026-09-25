@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowDown,
   ArrowUp,
   Download,
   ImageDown,
+  Loader2,
   Mail,
   Plus,
   Sparkles,
@@ -31,6 +33,7 @@ import {
   setMatchOpponent,
   setMatchTime,
 } from "@/app/actions/planning";
+import { refreshFfhbWeekend } from "@/app/actions/ffhb";
 import {
   FfhbImportDialog,
   type BoardFfhb,
@@ -135,6 +138,31 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
   const [opponentEdits, setOpponentEdits] = useState<Record<string, string>>({});
   const [timeEdits, setTimeEdits] = useState<Record<string, string>>({});
   const [importOpen, setImportOpen] = useState(false);
+
+  // Données FFHB du week-end relues à l'ouverture de la journée : la page
+  // s'affiche tout de suite avec le cache, puis les propositions se mettent
+  // à jour. Le ref évite un double appel (effets rejoués en dev).
+  const router = useRouter();
+  const [ffhbStatus, setFfhbStatus] = useState<"loading" | "done" | "error" | "idle">(
+    data.ffhb.configured ? "loading" : "idle"
+  );
+  const refreshStarted = useRef(false);
+  const runFfhbRefresh = useCallback(async () => {
+    const result = await refreshFfhbWeekend(data.matchdayId).catch(() => null);
+    setFfhbStatus(result?.ok ? "done" : "error");
+    if (!result) toast.error("Mise à jour FFHB impossible (réseau)");
+    else if (!result.ok) toast.error(result.message);
+    router.refresh();
+  }, [data.matchdayId, router]);
+  useEffect(() => {
+    if (!data.ffhb.configured || refreshStarted.current) return;
+    refreshStarted.current = true;
+    void runFfhbRefresh();
+  }, [data.ffhb.configured, runFfhbRefresh]);
+  function retryFfhbRefresh() {
+    setFfhbStatus("loading");
+    void runFfhbRefresh();
+  }
   const importable = data.ffhb.proposals.filter(
     (p) => p.status === "importable" || p.status === "rattachable"
   ).length;
@@ -328,9 +356,16 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
           onClick={() => setImportOpen(true)}
           className="flex items-center gap-1.5 rounded-[9px] border bg-card px-3.5 py-2 text-[12.5px] font-bold transition-colors hover:border-primary hover:text-primary"
         >
-          <Download className="size-3.5" />
+          {ffhbStatus === "loading" ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Download className="size-3.5" />
+          )}
           Importer depuis la FFHB
-          {importable > 0 && (
+          {ffhbStatus === "loading" && (
+            <span className="text-[11px] font-semibold text-[#9C958D]">mise à jour…</span>
+          )}
+          {ffhbStatus !== "loading" && importable > 0 && (
             <span className="rounded-full bg-primary px-1.5 text-[11px] text-white">
               {importable}
             </span>
@@ -614,6 +649,12 @@ export function MatchdayBoard({ data }: { data: BoardData }) {
       </form>
 
       <FfhbImportDialog
+        // Remonté quand les propositions changent : les cases cochées par
+        // défaut suivent alors la liste fraîche.
+        key={data.ffhb.proposals.map((p) => `${p.key}:${p.status}`).join(",")}
+        refreshing={ffhbStatus === "loading"}
+        refreshed={ffhbStatus === "done"}
+        onRefresh={retryFfhbRefresh}
         open={importOpen}
         onOpenChange={setImportOpen}
         matchdayId={data.matchdayId}

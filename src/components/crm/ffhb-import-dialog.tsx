@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { AlertCircle, Download, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { importFfhbMatches, triggerFfhbSync } from "@/app/actions/ffhb";
+import { importFfhbMatches } from "@/app/actions/ffhb";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +46,15 @@ export function FfhbImportDialog({
   matchdayId,
   dateLabel,
   ffhb,
+  refreshing,
+  refreshed,
+  onRefresh,
 }: {
+  /** Relecture du week-end sur ffhandball.fr en cours (lancée à l'ouverture de la journée). */
+  refreshing: boolean;
+  /** Relecture terminée avec succès pendant cette visite. */
+  refreshed: boolean;
+  onRefresh: () => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   matchdayId: string;
@@ -107,14 +115,6 @@ export function FfhbImportDialog({
     });
   }
 
-  function resync() {
-    startTransition(async () => {
-      const result = await triggerFfhbSync("window");
-      if (result.ok) toast.success(result.message);
-      else toast.error(result.message);
-    });
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[620px] rounded-[18px] p-[26px]">
@@ -128,6 +128,13 @@ export function FfhbImportDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {refreshing && (
+          <p className="flex items-center gap-2 rounded-[10px] bg-secondary px-3 py-2 text-[12.5px] font-semibold text-[#9C958D]">
+            <Loader2 className="size-3.5 animate-spin" />
+            Mise à jour depuis ffhandball.fr… la liste va se compléter.
+          </p>
+        )}
+
         {!ffhb.configured ? (
           <Empty
             title="Aucune équipe n'est reliée à une poule FFHB."
@@ -136,7 +143,7 @@ export function FfhbImportDialog({
             cta="Configurer les équipes"
           />
         ) : ffhb.proposals.length === 0 ? (
-          <Empty
+          refreshing ? null : <Empty
             title={`Aucune rencontre trouvée pour ${dateLabel.toLowerCase()}.`}
             hint={
               ffhb.lastSyncError
@@ -214,15 +221,19 @@ export function FfhbImportDialog({
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3">
           <button
-            onClick={resync}
-            disabled={pending}
+            onClick={onRefresh}
+            disabled={pending || refreshing}
             className="flex items-center gap-1.5 text-[12px] font-semibold text-[#9C958D] transition-colors hover:text-foreground disabled:opacity-50"
-            title="Relire ffhandball.fr maintenant"
+            title="Relire ce week-end sur ffhandball.fr"
           >
-            <RefreshCw className={cn("size-3.5", pending && "animate-spin")} />
-            {ffhb.lastSyncLabel
-              ? `Données FFHB ${ffhb.lastSyncLabel}`
-              : "Jamais synchronisé"}
+            <RefreshCw className={cn("size-3.5", refreshing && "animate-spin")} />
+            {refreshing
+              ? "Mise à jour…"
+              : refreshed
+                ? "Données FFHB à jour"
+                : ffhb.lastSyncLabel
+                  ? `Données FFHB ${ffhb.lastSyncLabel}`
+                  : "Jamais synchronisé"}
           </button>
           <button
             onClick={confirm}

@@ -15,6 +15,7 @@ import {
   findEquipesForStructure,
   currentJournee,
   journeeForDate,
+  journeesInRange,
   journeesInWindow,
   matchOurEquipe,
   normalizeRencontre,
@@ -156,7 +157,10 @@ const d1f = [
 eq("un mercredi → la prochaine journée par date", currentJournee(d1f, "2026-09-23"), 3);
 eq("un samedi → la journée qui le couvre", currentJournee(d1f, "2026-10-24"), 1);
 eq("après la saison → la dernière jouée", currentJournee(d1f, "2027-06-01"), 1);
-eq("fenêtre choisie sur les dates, pas sur les numéros", journeesInWindow(d1f, "2026-09-23"), [2, 3, 4]);
+eq("fenêtre choisie sur les dates, pas sur les numéros", journeesInWindow(d1f, "2026-09-23"), [2, 3, 4, 5]);
+eq("week-end ciblé : samedi-dimanche", journeesInRange(d1f, "2026-10-10", "2026-10-11"), [5]);
+eq("week-end ciblé : la journée reportée retrouvée", journeesInRange(d1f, "2026-10-24", "2026-10-25"), [1]);
+eq("week-end sans journée", journeesInRange(d1f, "2026-10-17", "2026-10-18"), []);
 
 // ---------- RENCONTRES ----------
 
